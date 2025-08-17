@@ -1,0 +1,113 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Poetry
+poetry.lock
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.manifest
+*.spec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.cache
+
+# Documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+site/
+mkdocs.yml
+
+# Output and Logs
+output/
+*.log
+*.pid
+*.seed
+*.pid.lock
+demo_output/
+test_output/
+temp/
+tmp/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Local development
+local/
+scratch/
+*.bak
+*.orig
