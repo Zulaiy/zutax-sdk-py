@@ -18,14 +18,22 @@ class IRNGenerator:
         Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
         Example: INV001-94ND90NR-20240611
         """
+        import os
+        
         # Extract invoice number (remove any prefix characters)
         invoice_number = invoice.invoice_number or "INV001"
         
-        # Generate service ID (8 characters, alphanumeric)
-        service_id = IRNGenerator._generate_service_id()
+        # Use FIRS-assigned service ID from environment
+        service_id = os.environ.get('FIRS_SERVICE_ID')
+        if not service_id:
+            # Only generate if not provided
+            service_id = IRNGenerator._generate_service_id()
         
-        # Generate date stamp (YYYYMMDD format)
-        date_stamp = IRNGenerator._generate_date_stamp(invoice.issue_date)
+        # Ensure exactly 8 characters
+        service_id = service_id[:8].upper()
+        
+        # Generate date stamp from invoice issue date
+        date_stamp = IRNGenerator._generate_date_stamp(invoice.issue_date if hasattr(invoice, 'issue_date') else None)
         
         # Combine components
         irn = f"{invoice_number}-{service_id}-{date_stamp}"
@@ -49,15 +57,23 @@ class IRNGenerator:
     
     @staticmethod
     def validate_irn(irn: str) -> bool:
-        """Validate IRN format."""
+        """Validate IRN format.
+        Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
+        Note: InvoiceNumber may contain dashes
+        """
         if not irn:
             return False
         
         parts = irn.split('-')
-        if len(parts) != 3:
+        if len(parts) < 3:
             return False
         
-        invoice_number, service_id, date_stamp = parts
+        # Last part should be date stamp (8 digits)
+        date_stamp = parts[-1]
+        # Second to last should be service ID (8 alphanumeric)
+        service_id = parts[-2]
+        # Everything else is the invoice number
+        invoice_number = '-'.join(parts[:-2])
         
         # Validate components
         if not invoice_number:
@@ -79,12 +95,20 @@ class IRNGenerator:
     
     @staticmethod
     def extract_components(irn: str) -> dict:
-        """Extract components from IRN."""
+        """Extract components from IRN.
+        Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
+        Note: InvoiceNumber may contain dashes
+        """
         if not IRNGenerator.validate_irn(irn):
             raise ValueError("Invalid IRN format")
         
         parts = irn.split('-')
-        invoice_number, service_id, date_stamp = parts
+        
+        # Last part is date stamp, second to last is service ID
+        date_stamp = parts[-1]
+        service_id = parts[-2]
+        # Everything else is the invoice number
+        invoice_number = '-'.join(parts[:-2])
         
         # Parse date
         issue_date = datetime.strptime(date_stamp, "%Y%m%d")

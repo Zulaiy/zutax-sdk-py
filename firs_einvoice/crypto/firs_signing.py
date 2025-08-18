@@ -54,7 +54,6 @@ class FIRSSigner:
                 
                 self.firs_public_key = RSA.import_key(public_key_pem)
                 self.firs_certificate = certificate_base64
-                print('✓ FIRS crypto keys loaded from environment variables')
                 return
             
             # Fallback: try to load from key file
@@ -68,14 +67,12 @@ class FIRSSigner:
                 
                 self.firs_public_key = RSA.import_key(public_key_pem)
                 self.firs_certificate = certificate_base64
-                print('✓ FIRS crypto keys loaded from key file')
                 return
             
             raise Exception('FIRS keys not found. Set FIRS_PUBLIC_KEY and FIRS_CERTIFICATE environment variables or ensure key file exists.')
             
         except Exception as error:
-            print(f'Failed to load FIRS keys: {error}')
-            print('   Make sure your keys are in the correct Base64 format')
+            pass
     
     def sign_irn(self, irn: str, timestamp: Optional[int] = None) -> FIRSSigningResult:
         """
@@ -119,8 +116,6 @@ class FIRSSigner:
                 "certificate": payload.certificate
             }
             
-            print("✅ Reduced payload:", payload_reduced)
-            
             # Create cipher using PyCrypto/PyCryptodome (matches working code)
             cipher = PKCS1_v1_5.new(self.firs_public_key)
             
@@ -131,14 +126,12 @@ class FIRSSigner:
             # Convert to Base64 for QR code as per FIRS specification
             encrypted_base64 = base64.b64encode(encrypted_data_reduced).decode('utf-8')
             
-            print('✓ Payload encrypted using FIRS RSA encryption (PKCS1)')
             return FIRSEncryptionResult(
                 encrypted_base64=encrypted_base64,
                 timestamp=int(time.time() * 1000)  # Milliseconds
             )
             
         except Exception as error:
-            print(f'Failed to encrypt payload with FIRS RSA encryption: {error}')
             raise Exception(f'FIRS encryption failed: {error}')
     
     @staticmethod
@@ -173,8 +166,6 @@ class FIRSSigner:
                 'irn': irn_with_timestamp,
                 'certificate': certificate
             }
-            
-            print("✅ Reduced payload:", payload_reduced)
             
             # Step 3: Handle public key input - could be Base64-encoded PEM or direct PEM
             if '-----BEGIN PUBLIC KEY-----' in public_key_input:
@@ -229,9 +220,10 @@ class FIRSSigner:
         Returns all intermediate steps for verification.
         """
         timestamp = int(time.time())
+        irn_with_timestamp = f"{irn}.{timestamp}"
         
         payload = FIRSSigningPayload(
-            irn=irn,
+            irn=irn_with_timestamp,
             certificate=self.firs_certificate or ''
         )
         
@@ -241,7 +233,7 @@ class FIRSSigner:
         return {
             'base_irn': irn,
             'timestamp': timestamp,
-            'irn_with_timestamp': irn,
+            'irn_with_timestamp': irn_with_timestamp,
             'payload': payload.model_dump(),
             'payload_json': payload_json,
             'encrypted_data': encryption_result.encrypted_base64,

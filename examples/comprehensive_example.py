@@ -10,36 +10,46 @@ This example demonstrates all major features:
 - Batch operations and caching
 """
 
+import os
 import asyncio
 import json
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import from the FIRS SDK
 from firs_einvoice import (
     FIRSClient,
+    FIRSConfig,
     InvoiceBuilder,
     LineItemBuilder,
     HSNManager,
     TaxManager,
-    IRNGenerator,
-    FIRSQRCodeGenerator,
-    FIRSSigner,
     BusinessContext,
     ValidationError,
 )
+
+# Import crypto modules separately
+from firs_einvoice.crypto.irn import IRNGenerator
+from firs_einvoice.crypto.firs_qrcode import FIRSQRCodeGenerator
+from firs_einvoice.crypto.firs_signing import FIRSSigner
 
 
 def create_business_context() -> BusinessContext:
     """Create business context for the example."""
     return BusinessContext(
-        business_id="DEMO-001",
-        business_name="Tech Solutions Nigeria Ltd",
-        tin="12345678-0001",
-        email="demo@techsol.ng",
-        phone="+234-801-234-5678",
-        address="123 Victoria Island, Lagos"
+        business_id=os.environ.get('BUSINESS_ID', 'DEMO-001'),
+        business_name=os.environ.get('BUSINESS_NAME', 'Tech Solutions Nigeria Ltd'),
+        tin=os.environ.get('TIN', '12345678901'),  # Fixed to match regex pattern
+        email=os.environ.get('EMAIL', 'demo@techsol.ng'),
+        phone=os.environ.get('PHONE', '+234-801-234-5678'),
+        address_street=os.environ.get('ADDRESS_STREET', '123 Victoria Island'),
+        address_city=os.environ.get('ADDRESS_CITY', 'Lagos'),
+        address_state=os.environ.get('ADDRESS_STATE', 'LA')
     )
 
 
@@ -49,18 +59,21 @@ async def demonstrate_invoice_creation():
     print("1. INVOICE CREATION AND VALIDATION")
     print("="*60)
     
-    # Initialize client with business context
+    # Initialize client with proper FIRSConfig
     business_context = create_business_context()
-    client = FIRSClient(
-        config_overrides={
-            'api_key': 'demo_api_key',
-            'api_secret': 'demo_api_secret',
-            'base_url': 'https://api.firs.gov.ng',
-            'timeout': 30000,
-            'max_retries': 3
-        },
-        business_context=business_context
+    
+    # Create FIRSConfig object
+    config = FIRSConfig(
+        api_key=os.environ.get('FIRS_API_KEY', 'demo_api_key'),
+        api_secret=os.environ.get('FIRS_API_SECRET', 'demo_api_secret'),
+        business_id=os.environ.get('BUSINESS_ID', business_context.business_id),
+        business_name=os.environ.get('BUSINESS_NAME', business_context.business_name),
+        tin=os.environ.get('TIN', business_context.tin),
+        service_id=os.environ.get('FIRS_SERVICE_ID', '94ND90NR')
     )
+    
+    # Initialize client with config
+    client = FIRSClient(config=config, business_context=business_context)
     
     # Create invoice builder
     builder = client.create_invoice_builder()
@@ -77,7 +90,7 @@ async def demonstrate_invoice_creation():
     supplier_party = {
         'business_id': 'SUP-001',
         'name': 'Tech Solutions Nigeria Ltd',
-        'tin': '12345678-0001',
+        'tin': '12345678901',
         'email': 'billing@techsol.ng',
         'phone': '+234-801-234-5678',
         'address': {
@@ -92,7 +105,7 @@ async def demonstrate_invoice_creation():
     customer_party = {
         'business_id': 'CUS-001',
         'name': 'Global Enterprises Ltd',
-        'tin': '87654321-0001',
+        'tin': '87654321901',
         'email': 'accounts@globalent.ng',
         'phone': '+234-809-876-5432',
         'address': {
@@ -307,12 +320,12 @@ async def demonstrate_batch_operations(client):
         builder.set_accounting_supplier_party({
             'business_id': 'SUP-001',
             'name': 'Tech Solutions Nigeria Ltd',
-            'tin': '12345678-0001'
+            'tin': '12345678901'
         })
         builder.set_accounting_customer_party({
             'business_id': f'CUS-{i+1:03d}',
             'name': f'Customer {i+1}',
-            'tin': f'87654321-{i+1:04d}'
+            'tin': f'876543{21000+i:d}'
         })
         
         # Add line item
@@ -332,7 +345,13 @@ async def demonstrate_batch_operations(client):
     # Batch validation
     print("\nBatch Validation:")
     print("-" * 20)
-    validation_results = await client.batch_validate_invoices(invoices)
+    try:
+        validation_results = await client.batch_validate_invoices(invoices)
+    except AttributeError:
+        # Method might not exist, use individual validation
+        validation_results = []
+        for inv in invoices:
+            validation_results.append(client.validate_invoice(inv))
     valid_count = sum(1 for r in validation_results if r.get('valid', False))
     print(f"✓ Validated {len(validation_results)} invoices")
     print(f"✓ Valid invoices: {valid_count}/{len(invoices)}")

@@ -49,9 +49,7 @@ from .api.resources import (
     ProductCode,
     ServiceCode,
     State,
-    LGA,
-    InvoiceType,
-    TaxCategory
+    LGA
 )
 
 # Cache
@@ -208,9 +206,9 @@ class FIRSClient:
         if not invoice.irn:
             invoice.irn = self.generate_irn(invoice)
         
-        # Prepare API payload
+        # Prepare API payload - model_dump handles datetime serialization
         payload = {
-            "invoice": invoice.model_dump(exclude_none=True),
+            "invoice": invoice.model_dump(mode='json', exclude_none=True),
             "irn": invoice.irn
         }
         
@@ -258,7 +256,8 @@ class FIRSClient:
     
     def generate_irn(self, invoice: Invoice) -> str:
         """
-        Generate Invoice Reference Number.
+        Generate Invoice Reference Number according to FIRS specification.
+        Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
         
         Args:
             invoice: Invoice to generate IRN for
@@ -267,10 +266,19 @@ class FIRSClient:
             Generated IRN
         """
         from datetime import datetime
+        import os
         
-        # Simple IRN generation logic
-        date_stamp = datetime.now().strftime("%Y%m%d")
-        service_id = self.config.business_id[:8].upper()
+        # Use FIRS-assigned service ID from environment
+        service_id = os.environ.get('FIRS_SERVICE_ID')
+        if not service_id:
+            # Fallback to config or generate from business_id
+            service_id = getattr(self.config, 'service_id', None) or self.config.business_id[:8].upper()
+        
+        # Ensure service_id is exactly 8 characters
+        service_id = service_id[:8].upper().ljust(8, '0')
+        
+        # Use invoice issue date if available, otherwise current date
+        date_stamp = invoice.issue_date.strftime("%Y%m%d") if hasattr(invoice, 'issue_date') and invoice.issue_date else datetime.now().strftime("%Y%m%d")
         
         return f"{invoice.invoice_number}-{service_id}-{date_stamp}"
     

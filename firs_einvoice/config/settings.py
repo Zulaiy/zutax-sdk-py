@@ -143,6 +143,10 @@ class FIRSConfig(BaseSettings):
         pattern=r'^\d{8,15}$',
         description="Tax Identification Number"
     )
+    service_id: Optional[str] = Field(
+        None,
+        description="FIRS-assigned Service ID (8 characters)"
+    )
     
     # Operational Settings
     timeout: int = Field(

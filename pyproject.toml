@@ -65,6 +65,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short --strict-markers"
+markers = [
+    "asyncio: mark tests as async",
+]
 
 [tool.black]
 line-length = 100

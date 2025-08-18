@@ -9,13 +9,19 @@ This example demonstrates:
 - Generating IRN and QR code
 """
 
+import os
 import asyncio
 from decimal import Decimal
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import from the package
 from firs_einvoice import (
     FIRSClient,
+    FIRSConfig,
     InvoiceBuilder,
     LineItemBuilder,
     Party,
@@ -31,7 +37,7 @@ def create_supplier() -> Party:
     """Create supplier/seller party with Pydantic validation."""
     return Party(
         business_id="SUP-001",
-        tin="12345678",
+        tin="12345678901",
         name="Tech Solutions Nigeria Ltd",
         trade_name="TechSol",
         email="info@techsol.ng",
@@ -54,7 +60,7 @@ def create_customer() -> Party:
     """Create customer/buyer party with Pydantic validation."""
     return Party(
         business_id="CUS-001",
-        tin="87654321",
+        tin="87654321901",
         name="Global Enterprises Limited",
         email="purchasing@globalent.ng",
         phone="08087654321",
@@ -95,13 +101,19 @@ async def main():
     
     # 1. Initialize the client
     print("\n1. Initializing FIRS Client...")
-    client = FIRSClient(
-        api_key="demo_api_key",
-        api_secret="demo_api_secret",
-        business_id="DEMO-BUS-001",
-        business_name="Demo Business Ltd",
-        tin="12345678",
+    
+    # Create FIRSConfig object
+    config = FIRSConfig(
+        api_key=os.environ.get('FIRS_API_KEY', 'demo_api_key'),
+        api_secret=os.environ.get('FIRS_API_SECRET', 'demo_api_secret'),
+        business_id=os.environ.get('BUSINESS_ID', 'DEMO-BUS-001'),
+        business_name=os.environ.get('BUSINESS_NAME', 'Demo Business Ltd'),
+        tin=os.environ.get('TIN', '12345678901'),  # Fixed to match regex
+        service_id=os.environ.get('FIRS_SERVICE_ID', '94ND90NR')
     )
+    
+    # Initialize client with config
+    client = FIRSClient(config=config)
     print("   ✓ Client initialized")
     
     # 2. Create parties

@@ -16,7 +16,7 @@ from .irn import IRNGenerator
 class FIRSQRCodeOptions(BaseModel):
     """QR code generation options."""
     version: Optional[int] = None  # Auto-detect as in working code
-    error_correction: str = 'H'  # Use high error correction as in working code
+    error_correction: str = 'M'  # Match JavaScript default
     box_size: int = 10
     border: int = 4
     fill_color: str = 'black'
@@ -59,8 +59,8 @@ class FIRSQRCodeGenerator:
         return img_base64
     
     @staticmethod
-    async def generate_qr_code_to_file(invoice, irn: str, file_path: str, 
-                                     options: Optional[FIRSQRCodeOptions] = None) -> None:
+    def generate_qr_code_to_file(invoice, irn: str, file_path: str, 
+                                 options: Optional[FIRSQRCodeOptions] = None) -> None:
         """
         Generate FIRS-compliant QR code and save to file.
         """
@@ -83,8 +83,7 @@ class FIRSQRCodeGenerator:
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
         
         # Save to file
-        qr_code.save(file_path)
-        print(f"✓ QR code saved to: {file_path}")
+        qr_code.save(file_path, format='PNG')
     
     @staticmethod
     def _create_qr_code(data: str, options: FIRSQRCodeOptions) -> PilImage:
@@ -98,7 +97,7 @@ class FIRSQRCodeGenerator:
         }
         
         error_correction = error_correction_map.get(options.error_correction, 
-                                                  qrcode.constants.ERROR_CORRECT_H)
+                                                  qrcode.constants.ERROR_CORRECT_M)
         
         # Create QR code with settings matching working implementation
         qr = qrcode.QRCode(
@@ -113,7 +112,7 @@ class FIRSQRCodeGenerator:
         
         # Create image with exact settings from working code
         img = qr.make_image(
-            fill="black",  # Match working code exactly
+            fill_color="black",  # Correct parameter name
             back_color="white"  # Match working code exactly
         )
         
@@ -137,8 +136,7 @@ class FIRSQRCodeGenerator:
             if output_path:
                 # Save to file
                 Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-                qr_code.save(output_path)
-                print(f"✓ QR code saved to: {output_path}")
+                qr_code.save(output_path, format='PNG')
                 return None
             else:
                 # Return base64
