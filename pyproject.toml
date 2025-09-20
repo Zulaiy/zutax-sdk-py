@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "firs-einvoice"
+name = "zutax-sdk-py"
 version = "1.0.0"
 description = "Python SDK for FIRS E-Invoicing API Integration with Pydantic validation"
 authors = ["FIRS E-Invoice SDK <sdk@firs-einvoice.ng>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/firs-einvoice/firs-einvoice-py"
-repository = "https://github.com/firs-einvoice/firs-einvoice-py"
+homepage = "https://github.com/zulaiy/zutax-sdk-py"
+repository = "https://github.com/zulaiy/zutax-sdk-py"
 documentation = "https://firs-einvoice-py.readthedocs.io"
 keywords = ["firs", "einvoice", "nigeria", "tax", "invoice", "vat", "ubl", "pydantic"]
 classifiers = [
