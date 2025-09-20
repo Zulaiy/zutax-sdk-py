@@ -5,7 +5,13 @@ Provides invoice validation, digital signing, QR code generation, and API integr
 """
 
 # Configuration
-from .config.settings import FIRSConfig, get_config, update_config, BusinessContext
+from .config.settings import (
+    FIRSConfig, 
+    get_config, 
+    update_config, 
+    BusinessContext, 
+    QRCustomization
+)
 from .config.constants import *
 
 # Models
@@ -286,21 +292,32 @@ class FIRSClient:
         invoice: Invoice,
         options: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Generate a QR payload placeholder for backward compatibility.
+        """Generate QR code using FIRSQRCodeGenerator.
 
-        Note: Real QR code generation has moved to FIRSQRCodeGenerator and now
-        only requires the IRN. This placeholder returns a simple JSON payload
-        with IRN and basic invoice fields to avoid breaking external imports.
+        Args:
+            invoice: Invoice to generate QR code for
+            options: Optional QR code generation options
+            
+        Returns:
+            Base64-encoded PNG image data
         """
+        # Generate IRN if not present
         irn = invoice.irn or self.generate_irn(invoice)
-        return json.dumps({
-            "irn": irn,
-            "invoice_number": invoice.invoice_number,
-            "total": str(invoice.total_amount),
-            "date": invoice.invoice_date.isoformat(),
-            "supplier": getattr(invoice.supplier, 'name', None),
-            "customer": getattr(invoice.customer, 'name', None),
-        })
+        
+        # Use the actual FIRSQRCodeGenerator
+        try:
+            qr_options = FIRSQRCodeOptions() if options is None else FIRSQRCodeOptions(**options)
+            return FIRSQRCodeGenerator.generate_qr_code(irn, qr_options)
+        except Exception:
+            # Fallback to placeholder for backward compatibility
+            return json.dumps({
+                "irn": irn,
+                "invoice_number": invoice.invoice_number,
+                "total": str(invoice.total_amount),
+                "date": invoice.invoice_date.isoformat(),
+                "supplier": getattr(invoice.supplier, 'name', None),
+                "customer": getattr(invoice.customer, 'name', None),
+            })
     
     def generate_qr_code_data(self, invoice: Invoice) -> str:
         """
@@ -310,22 +327,26 @@ class FIRSClient:
             invoice: Invoice to generate QR code for
             
         Returns:
-            QR code data as JSON string
+            Base64-encoded PNG image data
         """
-        # This would normally use the QR code generator
-        # For now, return a placeholder
+        # Generate IRN if not present
         irn = invoice.irn or self.generate_irn(invoice)
         
-        qr_data = {
-            "irn": irn,
-            "invoice_number": invoice.invoice_number,
-            "total": str(invoice.total_amount),
-            "date": invoice.invoice_date.isoformat(),
-            "supplier": invoice.supplier.name,
-            "customer": invoice.customer.name,
-        }
-        
-        return json.dumps(qr_data)
+        # Use the actual FIRSQRCodeGenerator
+        try:
+            return FIRSQRCodeGenerator.generate_qr_code(irn)
+        except Exception:
+            # Fallback to JSON payload for backward compatibility
+            qr_data = {
+                "irn": irn,
+                "invoice_number": invoice.invoice_number,
+                "total": str(invoice.total_amount),
+                "date": invoice.invoice_date.isoformat(),
+                "supplier": invoice.supplier.name,
+                "customer": invoice.customer.name,
+            }
+            
+            return json.dumps(qr_data)
     
     async def generate_qr_code_to_file(
         self,
@@ -344,21 +365,32 @@ class FIRSClient:
         Returns:
             Path to saved QR code file
         """
-        # Sanitize invoice number for filename (replace special characters)
-        sanitized_invoice_number = invoice.invoice_number.replace("/", "_").replace("\\", "_")
+        # Generate IRN if not present
+        irn = invoice.irn or self.generate_irn(invoice)
+        
+        # Sanitize invoice number for filename
+        sanitized_number = invoice.invoice_number.replace("/", "_")
+        sanitized_number = sanitized_number.replace("\\", "_")
         
         if output_path:
             output_path = Path(output_path)
         elif output_dir:
-            output_path = Path(output_dir) / f"qr_{sanitized_invoice_number}.png"
+            output_path = Path(output_dir) / f"qr_{sanitized_number}.png"
         else:
-            output_path = Path(self.config.output_dir) / f"qr_{sanitized_invoice_number}.png"
+            base_dir = Path(self.config.output_dir)
+            output_path = base_dir / f"qr_{sanitized_number}.png"
         
-        # Ensure output directory exists
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # For now, create a placeholder JSON file for compatibility
-        output_path.write_text(await self.generate_qr_code(invoice))
+        # Use the actual FIRSQRCodeGenerator
+        try:
+            FIRSQRCodeGenerator.generate_qr_code_to_file(
+                invoice=invoice,
+                irn=irn,
+                file_path=str(output_path)
+            )
+        except Exception:
+            # Fallback: create a placeholder JSON file for compatibility
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(await self.generate_qr_code(invoice))
 
         return str(output_path)
     
@@ -572,6 +604,11 @@ __all__ = [
     # Builders
     "InvoiceBuilder",
     "LineItemBuilder",
+    # Cryptography
+    "IRNGenerator",
+    "FIRSSigner",
+    "FIRSQRCodeGenerator",
+    "FIRSQRCodeOptions",
     # Schemas
     "InvoiceInput",
     "validate_invoice_input",

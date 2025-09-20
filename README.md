@@ -398,4 +398,25 @@ For issues and questions:
 - Initial release with full Pydantic v2 support
 - Complete FIRS API integration
 - Digital signing and QR code generation
+
+## Publishing
+
+By default we publish to GitHub’s Python package registry (GitHub Packages) on version tags `v*`.
+
+Workflow: `.github/workflows/publish-github-packages.yml`
+
+Trigger a publish by tagging and pushing:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Install from GitHub Packages (replace OWNER with your org/user):
+
+```bash
+pip install --index-url https://pypi.pkg.github.com/OWNER/simple/ --extra-index-url https://pypi.org/simple/ zutax-sdk-py
+```
+
+Alternatively, PyPI publishing is available via a separate workflow and tag namespace (`pypi-v*`): `.github/workflows/publish-pypi.yml`.
 - Comprehensive validation and error handling
