@@ -1,8 +1,8 @@
 @echo off
-REM Setup script for FIRS E-Invoice Python SDK on Windows
+REM Setup script for Zutax Python SDK on Windows
 
 echo ===========================================
-echo FIRS E-Invoice Python SDK Setup for Windows
+echo Zutax Python SDK Setup for Windows
 echo ===========================================
 echo.
 
@@ -101,7 +101,7 @@ if not exist output (
 
 REM Verify installation
 echo Verifying installation...
-python -c "import firs_einvoice; print(f'FIRS E-Invoice SDK v{firs_einvoice.__version__} installed successfully')" 2>nul
+python -c "import zutax; print(f'Zutax SDK v{zutax.__version__} installed successfully')" 2>nul
 if %errorlevel% neq 0 (
     echo Warning: Could not verify installation. Try running: poetry install
 )
