@@ -14,7 +14,7 @@ Python SDK for integrating with Nigeria’s Federal Inland Revenue Service (FIRS
 
 ## Installation
 
-You can use Poetry (recommended) or plain pip. The package installs as `zutax-sdk-py` and is imported as `firs_einvoice`.
+You can use Poetry (recommended) or plain pip. The package installs as `zutax-firs-einvoice` and is imported as `zutax`.
 
 ### Quick start with Poetry
 
@@ -50,7 +50,7 @@ make test        # run tests
 ### Install via pip (when published)
 
 ```bash
-pip install zutax-sdk-py
+pip install zutax-firs-einvoice
 ```
 
 ## Quick start
@@ -62,17 +62,17 @@ import asyncio
 from decimal import Decimal
 from datetime import datetime
 
-from firs_einvoice import (
-    FIRSClient, FIRSConfig,
+from zutax import (
+    ZutaxClient, ZutaxConfig,
     Party, Address, PaymentDetails,
     InvoiceType, PaymentMethod,
 )
-from firs_einvoice.models.enums import StateCode, UnitOfMeasure
+from zutax.models.enums import StateCode, UnitOfMeasure
 
 
 async def main():
     # Configure client (env vars also supported)
-    config = FIRSConfig(
+    config = ZutaxConfig(
         api_key="your_api_key",
         api_secret="your_api_secret",
         business_id="YOUR-BUS-ID",
@@ -80,7 +80,7 @@ async def main():
         tin="12345678901",
         service_id="YOURSRV1",  # 8 chars preferred
     )
-    client = FIRSClient(config=config)
+    client = ZutaxClient(config=config)
 
     # Parties
     supplier = Party(
@@ -148,7 +148,7 @@ All core data is modeled with Pydantic v2. Invalid data will raise validation er
 
 ## Configuration
 
-Environment variables (via `.env`) are supported and/or you can pass a `FIRSConfig`.
+Environment variables (via `.env`) are supported and/or you can pass a `ZutaxConfig`.
 
 Environment keys commonly used:
 
@@ -165,9 +165,9 @@ FIRS_BASE_URL=https://api.firs.gov.ng/api/v1
 Programmatic configuration:
 
 ```python
-from firs_einvoice import FIRSClient, FIRSConfig
+from zutax import ZutaxClient, ZutaxConfig
 
-client = FIRSClient(config=FIRSConfig(
+client = ZutaxClient(config=ZutaxConfig(
     api_key="your_api_key",
     api_secret="your_api_secret",
     business_id="YOUR-BUS-ID",
@@ -179,7 +179,7 @@ client = FIRSClient(config=FIRSConfig(
 ### HSN and tax helpers
 
 ```python
-from firs_einvoice import HSNManager, TaxManager
+from zutax import HSNManager, TaxManager
 from decimal import Decimal
 
 hsn = HSNManager()
@@ -192,7 +192,7 @@ calc = tax.calculate_line_tax(amount=100000.0, custom_rate=7.5)
 ### Digital signing (when configured)
 
 ```python
-from firs_einvoice import FIRSSigner
+from zutax import ZutaxSigner as FIRSSigner
 
 signer = FIRSSigner()
 if hasattr(signer, "sign_invoice"):
@@ -258,10 +258,10 @@ pip install -r requirements-dev.txt  # if present, or use Poetry group dev
 Quality tools (if you use them):
 
 ```bash
-black firs_einvoice
-isort firs_einvoice
-mypy firs_einvoice
-flake8 firs_einvoice
+black zutax
+isort zutax
+mypy zutax
+flake8 zutax
 ```
 
 ## Documentation

@@ -17,20 +17,20 @@ from decimal import Decimal
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Import from the package
-from firs_einvoice import (
-    FIRSClient,
-    FIRSConfig,
+# Import from the package (imports at top to satisfy linters)
+from zutax import (
+    ZutaxClient,
+    ZutaxConfig,
     Party,
     Address,
     PaymentDetails,
     InvoiceType,
     PaymentMethod,
 )
-from firs_einvoice.models.enums import StateCode, UnitOfMeasure
+from zutax.models.enums import StateCode, UnitOfMeasure
+
+# Load environment variables
+load_dotenv()
 
 
 def create_supplier() -> Party:
@@ -102,8 +102,8 @@ async def main():
     # 1. Initialize the client
     print("\n1. Initializing FIRS Client...")
     
-    # Create FIRSConfig object
-    config = FIRSConfig(
+    # Create ZutaxConfig object
+    config = ZutaxConfig(
         api_key=os.environ.get('FIRS_API_KEY', 'demo_api_key'),
         api_secret=os.environ.get('FIRS_API_SECRET', 'demo_api_secret'),
         business_id=os.environ.get('BUSINESS_ID', 'DEMO-BUS-001'),
@@ -113,7 +113,7 @@ async def main():
     )
     
     # Initialize client with config
-    client = FIRSClient(config=config)
+    client = ZutaxClient(config=config)
     print("   ✓ Client initialized")
     
     # 2. Create parties
@@ -128,16 +128,21 @@ async def main():
     invoice_builder = client.create_invoice_builder()
     
     # Use the correct method names with fluent interface
-    invoice_builder = (invoice_builder
-                      .with_invoice_number("INV-2024-001")
-                      .with_invoice_type(InvoiceType.STANDARD)
-                      .with_invoice_date(datetime.now())
-                      .with_supplier(supplier)
-                      .with_customer(customer)
-                      .with_reference_number("PO-2024-789")
-                      .with_payment_details(create_payment_details())
-                      .with_notes("Thank you for your business!")
-                      .with_terms_and_conditions("Payment due within 30 days. Late payments subject to 2% monthly interest."))
+    invoice_builder = (
+        invoice_builder
+        .with_invoice_number("INV-2024-001")
+        .with_invoice_type(InvoiceType.STANDARD)
+        .with_invoice_date(datetime.now())
+        .with_supplier(supplier)
+        .with_customer(customer)
+        .with_reference_number("PO-2024-789")
+        .with_payment_details(create_payment_details())
+        .with_notes("Thank you for your business!")
+        .with_terms_and_conditions(
+            "Payment due within 30 days. "
+            "Late payments subject to 2% monthly interest."
+        )
+    )
     
     # 4. Add line items using the line item builder
     print("\n4. Adding Line Items...")

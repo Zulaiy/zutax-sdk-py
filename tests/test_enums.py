@@ -3,7 +3,7 @@
 import pytest
 from decimal import Decimal
 
-from firs_einvoice.models.enums import (
+from zutax.models.enums import (
     InvoiceType,
     InvoiceStatus,
     Currency,
@@ -12,7 +12,7 @@ from firs_einvoice.models.enums import (
     TaxCategory,
     UnitOfMeasure,
 )
-from firs_einvoice.utils import (
+from zutax.utils import (
     format_currency,
     format_percentage,
     calculate_percentage,

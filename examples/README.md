@@ -175,8 +175,8 @@ FIRS_BUSINESS_NAME=Your Business Ltd
 
 ### Creating a Party
 ```python
-from firs_einvoice import Party, Address
-from firs_einvoice.models.enums import StateCode
+from zutax import Party, Address
+from zutax.models.enums import StateCode
 
 party = Party(
     business_id="BUS-001",
@@ -195,7 +195,7 @@ party = Party(
 
 ### Adding Line Items
 ```python
-from firs_einvoice import LineItemBuilder
+from zutax import LineItemBuilder
 
 item = (LineItemBuilder()
     .with_description("Product Name")

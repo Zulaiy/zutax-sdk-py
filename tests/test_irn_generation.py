@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import after loading .env
-from firs_einvoice.crypto.irn import IRNGenerator
-from firs_einvoice import FIRSClient, FIRSConfig
+from zutax.crypto.irn import IRNGenerator
+from zutax import ZutaxClient as FIRSClient, ZutaxConfig as FIRSConfig
 
 def test_irn_generation():
     """Test IRN generation with proper FIRS_SERVICE_ID."""

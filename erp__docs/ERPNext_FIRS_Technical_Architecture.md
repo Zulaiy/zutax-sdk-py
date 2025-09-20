@@ -377,12 +377,12 @@ class FIRSInvoice(Document):
         firs_format_invoice = firs_client.convert_sales_invoice_to_firs_format(sales_invoice)
         
         # Generate IRN first
-        from firs_einvoice.crypto.irn import IRNGenerator
+    from zutax.crypto.irn import IRNGenerator
         irn_generator = IRNGenerator()
         irn = irn_generator.generate_irn(firs_format_invoice)
         
         # Generate QR code using SDK with IRN
-        from firs_einvoice.crypto.firs_qrcode import FIRSQRCodeGenerator
+    from zutax.crypto.firs_qrcode import FIRSQRCodeGenerator
         qr_code_base64 = FIRSQRCodeGenerator.generate_qr_code(irn)
         
         # Update this invoice with QR code and IRN
@@ -556,17 +556,17 @@ def check_status(firs_invoice_name):
 ### 3.1 FIRS Client Wrapper (api/firs_client.py)
 ```python
 import frappe
-from firs_einvoice import (
-    FIRSClient, 
-    FIRSConfig,
-    Party, 
+from zutax import (
+    ZutaxClient as FIRSClient,
+    ZutaxConfig as FIRSConfig,
+    Party,
     Address,
     LineItem,
     InvoiceType,
     PaymentDetails,
-    PaymentMethod
+    PaymentMethod,
 )
-from firs_einvoice.models.enums import StateCode, UnitOfMeasure
+from zutax.models.enums import StateCode, UnitOfMeasure
 from decimal import Decimal
 import json
 
@@ -986,7 +986,7 @@ def cancel_firs_invoice(firs_invoice_name, reason):
 ```python
 import frappe
 import re
-from firs_einvoice.schemas.validators import validate_tin
+from zutax.schemas.validators_impl import validate_tin
 
 def validate_customer_tin(doc, method):
     """Validate customer TIN on save"""
@@ -1057,8 +1057,8 @@ QR code generation is now handled directly by the FIRS E-Invoice SDK using the `
 
 **Usage Example:**
 ```python
-from firs_einvoice.crypto.irn import IRNGenerator
-from firs_einvoice.crypto.firs_qrcode import FIRSQRCodeGenerator
+from zutax.crypto.irn import IRNGenerator
+from zutax.crypto.firs_qrcode import FIRSQRCodeGenerator
 
 # Generate IRN first
 irn_generator = IRNGenerator()

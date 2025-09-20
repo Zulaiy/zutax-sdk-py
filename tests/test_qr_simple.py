@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 import pytest
-from firs_einvoice.crypto.firs_qrcode import FIRSQRCodeGenerator
+from zutax.crypto.firs_qrcode import FIRSQRCodeGenerator
 import uuid
 
 

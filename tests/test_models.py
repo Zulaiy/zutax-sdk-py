@@ -5,13 +5,13 @@ from datetime import datetime
 from decimal import Decimal
 from pydantic import ValidationError
 
-from firs_einvoice.models import (
+from zutax.models import (
     Invoice,
     Party,
     Address,
     LineItem,
 )
-from firs_einvoice.models.enums import (
+from zutax.models.enums import (
     CountryCode,
     Currency,
     InvoiceType,
@@ -26,7 +26,7 @@ class TestAddress:
     
     def test_valid_address(self):
         """Test creating a valid address."""
-        from firs_einvoice.models.enums import StateCode
+        from zutax.models.enums import StateCode
         address = Address(
             street="123 Main St",
             city="Lagos",
@@ -40,7 +40,7 @@ class TestAddress:
     
     def test_optional_fields(self):
         """Test address with optional fields."""
-        from firs_einvoice.models.enums import StateCode
+        from zutax.models.enums import StateCode
         address = Address(
             street="456 Test Ave",
             city="Abuja",
@@ -52,7 +52,7 @@ class TestAddress:
     
     def test_invalid_country(self):
         """Test address with invalid country."""
-        from firs_einvoice.models.enums import StateCode
+        from zutax.models.enums import StateCode
         with pytest.raises(ValidationError):
             Address(
                 street="789 Error St",

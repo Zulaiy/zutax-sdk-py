@@ -5,8 +5,8 @@ from datetime import datetime
 from decimal import Decimal
 from pydantic import ValidationError
 
-from firs_einvoice import FIRSClient, Invoice, LineItem
-from firs_einvoice.schemas.validators import (
+from zutax import Invoice, LineItem
+from zutax.schemas.validators import (
     validate_tin,
     validate_phone,
     validate_email,
@@ -14,7 +14,7 @@ from firs_einvoice.schemas.validators import (
     validate_invoice_number,
     validate_business_id,
 )
-from firs_einvoice.models.enums import InvoiceType, UnitOfMeasure
+from zutax.models.enums import InvoiceType, UnitOfMeasure
 
 
 class TestFieldValidators:
@@ -190,17 +190,20 @@ class TestFieldValidators:
 class TestInvoiceValidation:
     """Test invoice-level validation."""
     
-    def test_validate_complete_invoice(self, client, sample_supplier, sample_customer,
-                                      line_item_builder):
+    def test_validate_complete_invoice(
+        self, client, sample_supplier, sample_customer, line_item_builder
+    ):
         """Test validation of a complete invoice."""
         # Create line items
-        line_item = (line_item_builder
-                    .with_description("Test Product")
-                    .with_hsn_code("8471")
-                    .with_quantity(5, UnitOfMeasure.PIECE)
-                    .with_unit_price(Decimal("100.00"))
-                    .with_tax(Decimal("7.5"))
-                    .build())
+        line_item = (
+            line_item_builder
+            .with_description("Test Product")
+            .with_hsn_code("8471")
+            .with_quantity(5, UnitOfMeasure.PIECE)
+            .with_unit_price(Decimal("100.00"))
+            .with_tax(Decimal("7.5"))
+            .build()
+        )
         
         # Create invoice
         invoice = Invoice(
@@ -233,10 +236,10 @@ class TestInvoiceValidation:
     
     def test_validate_invoice_invalid_tin(self, client, sample_address):
         """Test validation with invalid TIN."""
-        from firs_einvoice import Party
-        
+        from zutax import Party
+
         with pytest.raises(ValidationError) as exc_info:
-            invalid_party = Party(
+            Party(
                 business_id="INVALID-001",
                 tin="123",  # Invalid TIN
                 name="Invalid Company",

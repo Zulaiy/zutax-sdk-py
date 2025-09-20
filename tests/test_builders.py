@@ -5,13 +5,11 @@ from datetime import datetime
 from decimal import Decimal
 from pydantic import ValidationError
 
-from firs_einvoice import (
-    InvoiceBuilder,
-    LineItemBuilder,
+from zutax import (
     Invoice,
     LineItem,
 )
-from firs_einvoice.models.enums import (
+from zutax.models.enums import (
     InvoiceType,
     InvoiceStatus,
     UnitOfMeasure,
@@ -275,7 +273,7 @@ class TestInvoiceBuilder:
     def test_build_invoice_different_parties(self, invoice_builder, sample_supplier,
                                             sample_customer, sample_address):
         """Test building invoice with billing and shipping parties."""
-        from firs_einvoice import Party
+        from zutax import Party
         
         billing_party = Party(
             business_id="BILL-001",

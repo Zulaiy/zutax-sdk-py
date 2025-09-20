@@ -78,7 +78,7 @@ fi
 
 # Verify installation
 echo "Verifying installation..."
-python -c "import firs_einvoice; print(f'✓ FIRS E-Invoice SDK v{firs_einvoice.__version__} installed successfully')" 2>/dev/null
+python -c "import zutax; print(f'✓ Zutax SDK v{zutax.__version__} installed successfully')" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "⚠ Warning: Could not verify installation. Try running: poetry install"
 fi

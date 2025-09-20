@@ -5,9 +5,9 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Dict, Any
 
-from firs_einvoice import (
-    FIRSClient,
-    FIRSConfig,
+from zutax import (
+    ZutaxClient as FIRSClient,
+    ZutaxConfig as FIRSConfig,
     InvoiceBuilder,
     LineItemBuilder,
     Party,
@@ -17,7 +17,7 @@ from firs_einvoice import (
     InvoiceType,
     InvoiceStatus,
 )
-from firs_einvoice.models.enums import (
+from zutax.models.enums import (
     Currency,
     UnitOfMeasure,
     TaxCategory,
@@ -47,7 +47,7 @@ def client(test_config):
 @pytest.fixture
 def sample_address():
     """Provide sample address."""
-    from firs_einvoice.models.enums import StateCode
+    from zutax.models.enums import StateCode
     return Address(
         street="123 Test Street",
         city="Lagos",

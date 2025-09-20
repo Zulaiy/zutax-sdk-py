@@ -17,13 +17,10 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Import from the package
-from firs_einvoice import (
-    FIRSClient,
-    FIRSConfig,
+# Import from the package (imports at top to satisfy linters)
+from zutax import (
+    ZutaxClient,
+    ZutaxConfig,
     Party,
     Address,
     PaymentDetails,
@@ -32,10 +29,13 @@ from firs_einvoice import (
     HSNManager,
     TaxManager,
     IRNGenerator,
-    FIRSSigner,
+    ZutaxSigner as FIRSSigner,
     FIRSQRCodeGenerator,
 )
-from firs_einvoice.models.enums import StateCode, UnitOfMeasure
+from zutax.models.enums import StateCode, UnitOfMeasure
+
+# Load environment variables
+load_dotenv()
 
 
 def create_supplier() -> Party:
@@ -91,16 +91,18 @@ async def main():
     
     # Initialize client
     print("\nInitializing FIRS Client...")
-    config = FIRSConfig(
+    config = ZutaxConfig(
         api_key=os.environ.get('FIRS_API_KEY', 'demo_api_key'),
         api_secret=os.environ.get('FIRS_API_SECRET', 'demo_api_secret'),
         business_id=os.environ.get('BUSINESS_ID', 'DEMO-BUSINESS-001'),
-        business_name=os.environ.get('BUSINESS_NAME', 'Demo Tech Solutions Ltd'),
+        business_name=os.environ.get(
+            'BUSINESS_NAME', 'Demo Tech Solutions Ltd'
+        ),
         tin=os.environ.get('TIN', '12345678901'),
         service_id=os.environ.get('FIRS_SERVICE_ID', '94ND90NR')
     )
     
-    client = FIRSClient(config=config)
+    client = ZutaxClient(config=config)
     print("✓ Client initialized successfully")
     
     print("\n" + "=" * 60)
@@ -124,17 +126,21 @@ async def main():
     
     # Build comprehensive invoice
     invoice_builder = client.create_invoice_builder()
-    invoice_builder = (invoice_builder
-                      .with_invoice_number("COMP-2024-001")
-                      .with_invoice_type(InvoiceType.STANDARD)
-                      .with_invoice_date(datetime.now())
-                      .with_supplier(supplier)
-                      .with_customer(customer)
-                      .with_payment_details(payment_details)
-                      .with_reference_number("PO-2024-456")
-                      .with_notes("Comprehensive demonstration invoice")
-                      .with_terms_and_conditions("Payment due within 45 days. "
-                                                "Late payments subject to 2% monthly interest."))
+    invoice_builder = (
+        invoice_builder
+        .with_invoice_number("COMP-2024-001")
+        .with_invoice_type(InvoiceType.STANDARD)
+        .with_invoice_date(datetime.now())
+        .with_supplier(supplier)
+        .with_customer(customer)
+        .with_payment_details(payment_details)
+        .with_reference_number("PO-2024-456")
+        .with_notes("Comprehensive demonstration invoice")
+        .with_terms_and_conditions(
+            "Payment due within 45 days. "
+            "Late payments subject to 2% monthly interest."
+        )
+    )
     
     # Create diverse line items
     print("\nAdding line items with different tax scenarios...")
@@ -155,7 +161,9 @@ async def main():
     
     # IT services
     item2 = (line_item_builder
-             .with_description("Cloud Infrastructure Setup and Configuration Service")
+             .with_description(
+                 "Cloud Infrastructure Setup and Configuration Service"
+             )
              .with_hsn_code("9984")  # IT services
              .with_product_code("SVC-CLOUD-SETUP")
              .with_quantity(40, UnitOfMeasure.HOUR)
@@ -172,7 +180,9 @@ async def main():
              .with_product_code("MED-ECG-001")
              .with_quantity(10, UnitOfMeasure.PIECE)
              .with_unit_price(Decimal("45000.00"))
-             .with_tax_exemption("Medical equipment - VAT exempt under FIRS guidelines")
+             .with_tax_exemption(
+                 "Medical equipment - VAT exempt under FIRS guidelines"
+             )
              .build())
     
     line_item_builder.reset()
@@ -210,7 +220,9 @@ async def main():
     # Build the invoice
     invoice = invoice_builder.build()
     
-    print(f"✓ Created invoice with {len(invoice.line_items)} diverse line items")
+    print(
+        f"✓ Created invoice with {len(invoice.line_items)} diverse line items"
+    )
     print(f"✓ Invoice Number: {invoice.invoice_number}")
     
     # Display detailed line item information
@@ -260,7 +272,8 @@ async def main():
             if hsn_info:
                 print(f"\n{hsn_code} - {hsn_info.description}:")
                 print(f"  Category: {hsn_info.category}")
-                print(f"  VAT Status: {'EXEMPT' if hsn_info.is_exempt else 'TAXABLE'}")
+                status = 'EXEMPT' if hsn_info.is_exempt else 'TAXABLE'
+                print(f"  VAT Status: {status}")
                 print(f"  Tax Rate: {hsn_info.tax_rate}%")
             else:
                 print(f"\n{hsn_code} - HSN code not found in database")
@@ -283,7 +296,7 @@ async def main():
             custom_rate=7.5
         )
         
-        print(f"\nStandard item:")
+        print("\nStandard item:")
         print(f"  Base Amount: ₦{calc1.base_amount:,.2f}")
         print(f"  Tax Rate: {calc1.rate}%")
         print(f"  Tax Amount: ₦{calc1.tax_amount:,.2f}")
@@ -292,20 +305,20 @@ async def main():
         print(f"\nStandard tax calculation: {str(e)}")
     
     # Discounted item simulation
-    print(f"\nDiscounted item:")
+    print("\nDiscounted item:")
     print(f"  Base Amount: ₦100,000.00")
     print(f"  Discount: ₦10,000.00")
     print(f"  Taxable Amount: ₦90,000.00")
     print(f"  Tax Rate: 7.5%")
     print(f"  Tax Amount: ₦6,750.00")
-    print(f"  Total: ₦96,750.00")
+    print("  Total: ₦96,750.00")
     
     # VAT-exempt item simulation
-    print(f"\nVAT-exempt item:")
+    print("\nVAT-exempt item:")
     print(f"  Base Amount: ₦50,000.00")
     print(f"  Taxable Amount: ₦50,000.00")
     print(f"  Tax Status: EXEMPT")
-    print(f"  Total: ₦50,000.00")
+    print("  Total: ₦50,000.00")
     
     print("\n" + "=" * 60)
     print("4. DIGITAL SIGNING & QR CODE GENERATION")
@@ -322,31 +335,31 @@ async def main():
     print(f"  Date Stamp: {datetime.now().strftime('%Y%m%d')}")
     
     # Digital signing (demo)
-    print(f"\nPerforming Digital Signing...")
+    print("\nPerforming Digital Signing...")
     try:
         signer = FIRSSigner()
         # Try different method names that might exist
         if hasattr(signer, 'sign_invoice'):
             signature = signer.sign_invoice(invoice)
             invoice.signature = signature
-            print(f"✓ Invoice digitally signed")
+            print("✓ Invoice digitally signed")
             print(f"  Signature: {signature[:50]}...")
         elif hasattr(signer, 'create_signature'):
             signature = signer.create_signature(invoice)
             invoice.signature = signature
-            print(f"✓ Invoice digitally signed")
+            print("✓ Invoice digitally signed")
         else:
-            print(f"✗ Signing skipped (demo mode): Method not available")
+            print("✗ Signing skipped (demo mode): Method not available")
     except Exception as e:
         print(f"✗ Signing skipped (demo mode): {str(e)[:60]}")
     
     # QR Code generation (demo)
-    print(f"\nGenerating QR Code...")
+    print("\nGenerating QR Code...")
     try:
         qr_generator = FIRSQRCodeGenerator()
         if hasattr(qr_generator, 'generate'):
             qr_data = qr_generator.generate(invoice)
-            print(f"✓ QR Code Generated Successfully")
+            print("✓ QR Code Generated Successfully")
             print(f"  QR Data Length: {len(str(qr_data))} characters")
         elif hasattr(qr_generator, 'generate_qr_code'):
             qr_data = qr_generator.generate_qr_code(invoice)

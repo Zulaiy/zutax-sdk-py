@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "zutax-sdk-py"
+name = "zutax-firs-einvoice"
 version = "1.0.0"
 description = "Python SDK for FIRS E-Invoicing API Integration with Pydantic validation"
 authors = ["FIRS E-Invoice SDK <sdk@firs-einvoice.ng>"]
@@ -23,7 +23,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Office/Business :: Financial :: Accounting",
 ]
-packages = [{include = "firs_einvoice"}]
+packages = [
+    { include = "zutax" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"

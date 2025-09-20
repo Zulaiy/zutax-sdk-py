@@ -6,8 +6,8 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from firs_einvoice import FIRSClient, FIRSConfig, Invoice
-from firs_einvoice.models.enums import (
+from zutax import ZutaxClient as FIRSClient, ZutaxConfig as FIRSConfig, Invoice
+from zutax.models.enums import (
     InvoiceType,
     InvoiceStatus,
     UnitOfMeasure,
