@@ -1,382 +1,272 @@
-# FIRS E-Invoice Python SDK
+# ZUTAX – FIRS E‑Invoice Python SDK (by Zulaiy)
 
-A Python SDK for integrating with the Federal Inland Revenue Service (FIRS) E-Invoicing platform in Nigeria. Built with Pydantic v2 for robust data validation and type safety.
+Python SDK for integrating with Nigeria’s Federal Inland Revenue Service (FIRS) e‑Invoicing platform. Uses Pydantic v2 for strong typing and validation, and provides builders, IRN/QR utilities, and simple API helpers.
 
 ## Features
 
-- 🔐 **Secure API Integration** - Complete FIRS API client with authentication
-- ✅ **Pydantic Validation** - Full data validation using Pydantic v2 models
-- 🏗️ **Builder Pattern** - Fluent interface for invoice construction
-- 🔢 **HSN Code Management** - Harmonized System of Nomenclature support
-- 💰 **Tax Calculation** - Automatic VAT and tax calculations
-- 🔏 **Digital Signing** - PKI-based invoice signing
-- 📱 **QR Code Generation** - FIRS-compliant QR codes
-- 💾 **Caching** - Smart resource caching for performance
-- 🌍 **Nigerian Standards** - Built for Nigerian tax compliance
+- ✅ Pydantic v2 validation for all models
+- 🏗️ Fluent builders for invoices and line items
+- 🔢 HSN support and tax helpers
+- � IRN generation utility following FIRS format
+- 📱 QR code generation (base64 or file)
+- 🌐 Basic API helpers (submit/status) with retries
+- 💾 Optional caching hooks (extensible)
 
 ## Installation
 
-### Quick Setup with Poetry (Recommended)
+You can use Poetry (recommended) or plain pip. The package installs as `zutax-sdk-py` and is imported as `firs_einvoice`.
 
-#### Automated Setup
+### Quick start with Poetry
 
-Clone the repository and run the setup script:
+1) Clone and set up
 
-**Unix/Linux/Mac:**
 ```bash
-git clone https://github.com/firs-einvoice/firs-einvoice-py.git
-cd firs-einvoice-py
-chmod +x setup.sh
-./setup.sh
+git clone https://github.com/Zulaiy/zutax-sdk-py.git
+cd zutax-sdk-py
+./setup.sh   # on Linux/macOS (or run the steps below manually)
 ```
 
-**Windows:**
-```batch
-git clone https://github.com/firs-einvoice/firs-einvoice-py.git
-cd firs-einvoice-py
-setup.bat
-```
+2) Manual steps (if not using setup.sh)
 
-#### Manual Setup with Poetry
-
-1. **Create and activate virtual environment:**
 ```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate virtual environment
-# Unix/Linux/Mac:
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate.bat
-```
-
-2. **Install Poetry and dependencies:**
-```bash
-# Install Poetry
+python3 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install poetry
-
-# Configure Poetry to use the virtual environment
 poetry config virtualenvs.in-project true
 poetry config virtualenvs.create false
-
-# Install dependencies
 poetry install
+cp .env.example .env  # then edit with your values
 ```
 
-3. **Configure environment variables:**
-```bash
-cp .env.example .env
-# Edit .env with your FIRS API credentials
-```
-
-### Using Make (Unix/Linux/Mac)
-
-If you have `make` installed:
+### Using Make (Linux/macOS)
 
 ```bash
-make setup          # Complete setup
-make dev            # Install with dev dependencies
-make run-example    # Run the example
-make test           # Run tests
-make clean          # Clean build artifacts
+make setup       # bootstrap env and install deps
+make dev         # install with dev dependencies
+make test        # run tests
 ```
 
-### Installing from PyPI
+### Install via pip (when published)
 
-Once published to PyPI:
 ```bash
-pip install firs-einvoice
+pip install zutax-sdk-py
 ```
 
-Or with Poetry:
-```bash
-poetry add firs-einvoice
-```
+## Quick start
 
-## Quick Start
+Minimal end‑to‑end flow using builders, validation, IRN, and QR. The async parts run inside `asyncio.run(...)`.
 
 ```python
-from firs_einvoice import FIRSClient
-from firs_einvoice.models import Party, Address
-
-# Initialize client with credentials
-client = FIRSClient(
-    api_key="your_api_key",
-    api_secret="your_api_secret",
-    business_id="your_business_id"
-)
-
-# Create an invoice using the builder pattern
-invoice_builder = client.create_invoice_builder()
-
-invoice = (invoice_builder
-    .with_invoice_number("INV-2024-001")
-    .with_invoice_type("STANDARD")
-    .with_supplier(supplier_party)
-    .with_customer(customer_party)
-    .add_line_item(
-        description="Product A",
-        hsn_code="1234",
-        quantity=10,
-        unit_price=100.00
-    )
-    .build())
-
-# Validate locally
-validation_result = client.validate_invoice(invoice)
-
-# Submit to FIRS
-if validation_result.success:
-    submission_result = await client.submit_invoice(invoice)
-    print(f"IRN: {submission_result.irn}")
-    
-    # Generate QR code
-    qr_path = await client.generate_qr_code_to_file(invoice, "invoice_qr.png")
-    print(f"QR Code saved to: {qr_path}")
-```
-
-## Pydantic Models
-
-All data structures are defined using Pydantic v2 for automatic validation:
-
-```python
-from firs_einvoice.models import Invoice, Party, LineItem
+import asyncio
 from decimal import Decimal
+from datetime import datetime
 
-# Pydantic models with automatic validation
-party = Party(
-    business_id="BUS123",
-    tin="12345678",  # Automatically validated
-    name="ABC Company Ltd",
-    email="info@abc.com",  # Email validation
-    phone="08012345678",  # Nigerian phone validation
-    address=Address(
-        street="123 Main St",
-        city="Lagos",
-        state_code="LA",
-        country_code="NG"
-    )
+from firs_einvoice import (
+    FIRSClient, FIRSConfig,
+    Party, Address, PaymentDetails,
+    InvoiceType, PaymentMethod,
 )
+from firs_einvoice.models.enums import StateCode, UnitOfMeasure
 
-# Validation errors are raised automatically
-try:
-    invalid_party = Party(
-        business_id="123",
-        tin="invalid",  # Will raise validation error
-        # ... other fields
+
+async def main():
+    # Configure client (env vars also supported)
+    config = FIRSConfig(
+        api_key="your_api_key",
+        api_secret="your_api_secret",
+        business_id="YOUR-BUS-ID",
+        business_name="Your Business Ltd",
+        tin="12345678901",
+        service_id="YOURSRV1",  # 8 chars preferred
     )
-except ValidationError as e:
-    print(e.errors())
+    client = FIRSClient(config=config)
+
+    # Parties
+    supplier = Party(
+        business_id="SUP-001",
+        tin="12345678901",
+        name="Supplier Ltd",
+        email="info@supplier.ng",
+        phone="08012345678",
+        address=Address(street="1 Main St", city="Lagos", state_code=StateCode.LA)
+    )
+    customer = Party(
+        business_id="CUS-001",
+        tin="10987654321",
+        name="Customer Ltd",
+        email="purchasing@customer.ng",
+        phone="08087654321",
+        address=Address(street="2 Broad St", city="Abuja", state_code=StateCode.FC)
+    )
+
+    payment = PaymentDetails(method=PaymentMethod.BANK_TRANSFER)
+
+    # Build invoice
+    invoice = (
+        client.create_invoice_builder()
+        .with_invoice_number("INV-2025-000001")
+        .with_invoice_type(InvoiceType.STANDARD)
+        .with_invoice_date(datetime.now())
+        .with_supplier(supplier)
+        .with_customer(customer)
+        .with_payment_details(payment)
+        .add_line_item(
+            client.create_line_item_builder()
+            .with_description("Product A")
+            .with_hsn_code("8471")
+            .with_quantity(2, UnitOfMeasure.PIECE)
+            .with_unit_price(Decimal("150000.00"))
+            .with_tax(Decimal("7.5"))
+            .build()
+        )
+        .build()
+    )
+
+    # Validate
+    result = client.validate_invoice(invoice)
+    assert result.valid, f"Validation failed: {result.errors}"
+
+    # IRN & QR
+    invoice.irn = client.generate_irn(invoice)
+    qr_path = await client.generate_qr_code_to_file(invoice)
+    print("IRN:", invoice.irn)
+    print("QR saved:", qr_path)
+
+    # Optional: submit (requires working credentials/network)
+    # submission = await client.submit_invoice(invoice)
+    # print("Submitted:", submission.success, submission.status)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+## Models and validation
+
+All core data is modeled with Pydantic v2. Invalid data will raise validation errors upon model construction or explicit validation.
 
 ## Configuration
 
-### Environment Variables
+Environment variables (via `.env`) are supported and/or you can pass a `FIRSConfig`.
 
-Create a `.env` file:
+Environment keys commonly used:
 
 ```env
 FIRS_API_KEY=your_api_key
 FIRS_API_SECRET=your_api_secret
-FIRS_BUSINESS_ID=your_business_id
-FIRS_TIN=your_tin
-FIRS_BUSINESS_NAME=Your Business Name
+BUSINESS_ID=your_business_id
+BUSINESS_NAME=Your Business Name
+TIN=12345678901
+FIRS_SERVICE_ID=YOURSRV1
 FIRS_BASE_URL=https://api.firs.gov.ng/api/v1
 ```
 
-### Programmatic Configuration
+Programmatic configuration:
 
 ```python
-from firs_einvoice.config import FIRSConfig
+from firs_einvoice import FIRSClient, FIRSConfig
 
-config = FIRSConfig(
+client = FIRSClient(config=FIRSConfig(
     api_key="your_api_key",
     api_secret="your_api_secret",
-    business_id="your_business_id",
-    timeout=30,
-    max_retries=3
-)
-
-client = FIRSClient(config=config)
+    business_id="YOUR-BUS-ID",
+))
 ```
 
-## Advanced Features
+## Common tasks
 
-### HSN Code Management
+### HSN and tax helpers
 
 ```python
-from firs_einvoice.managers import HSNManager
+from firs_einvoice import HSNManager, TaxManager
+from decimal import Decimal
 
-hsn_manager = HSNManager()
+hsn = HSNManager()
+tax = TaxManager()
 
-# Add custom HSN codes
-hsn_manager.add_hsn_code(
-    code="9018",
-    description="Medical instruments",
-    tax_rate=Decimal("0"),  # VAT exempt
-    category="MEDICAL"
-)
-
-# Validate HSN codes
-is_valid = hsn_manager.validate_hsn("9018")
+info = hsn.get_hsn_code("9018")  # medical instruments (often VAT exempt)
+calc = tax.calculate_line_tax(amount=100000.0, custom_rate=7.5)
 ```
 
-### Tax Calculation
+### Digital signing (when configured)
 
 ```python
-from firs_einvoice.managers import TaxManager
+from firs_einvoice import FIRSSigner
 
-tax_manager = TaxManager()
-
-# Calculate taxes for line items
-tax_calculation = tax_manager.calculate_tax(
-    base_amount=Decimal("1000"),
-    tax_rate=Decimal("7.5"),
-    discount_percent=Decimal("10")
-)
-
-print(f"Tax Amount: {tax_calculation.tax_amount}")
-print(f"Total: {tax_calculation.total_amount}")
+signer = FIRSSigner()
+if hasattr(signer, "sign_invoice"):
+    signature = signer.sign_invoice(invoice)
 ```
 
-### Digital Signing
+### Batch operations
 
 ```python
-from firs_einvoice.crypto import FIRSSigner
-
-signer = FIRSSigner(
-    private_key_path="path/to/private_key.pem",
-    certificate_path="path/to/certificate.pem"
-)
-
-# Sign invoice data
-signed_data = signer.sign_invoice(invoice)
+results = await client.batch_validate_invoices([inv1, inv2])
+submissions = await client.batch_submit_invoices([inv1, inv2])
 ```
 
-### Batch Operations
+### Resources and caching (placeholders)
 
 ```python
-# Validate multiple invoices
-invoices = [invoice1, invoice2, invoice3]
-results = await client.batch_validate_invoices(invoices)
-
-# Bulk submission
-submission_results = await client.batch_submit_invoices(invoices)
-```
-
-### Resource Caching
-
-```python
-# Preload all resources for offline use
 await client.preload_resources()
-
-# Get cached resources
-vat_exemptions = await client.get_vat_exemptions()
 states = await client.get_states()
-lgas = await client.get_lgas("LA")  # Get LGAs for Lagos state
+lgas = await client.get_lgas("LA")
 ```
 
-## API Endpoints
+## API helpers (submit, status)
 
-The SDK supports all FIRS E-Invoice API endpoints:
+Minimal wrappers are included for common calls. In demo/local use, these often require stubbing/mocking unless you have valid credentials and access.
 
-- **Invoice Operations**
-  - `POST /api/v1/invoice/validate` - Validate invoice
-  - `POST /api/v1/invoice/submit` - Submit invoice
-  - `GET /api/v1/invoice/status/{irn}` - Get status
-  - `POST /api/v1/invoice/cancel` - Cancel invoice
+- Submit invoice: `await client.submit_invoice(invoice)`
+- Get status: `await client.get_invoice_status(irn)`
+- Cancel (stub): `await client.cancel_invoice(irn, reason)`
 
-- **Resource Endpoints**
-  - `GET /api/v1/invoice/resources/invoice-types`
-  - `GET /api/v1/invoice/resources/tax-categories`
-  - `GET /api/v1/invoice/resources/vat-exemptions`
-  - `GET /api/v1/invoice/resources/states`
-  - `GET /api/v1/invoice/resources/lgas`
+## Error handling
 
-## Error Handling
-
-```python
-from firs_einvoice.exceptions import (
-    FIRSAPIError,
-    ValidationError,
-    AuthenticationError
-)
-
-try:
-    result = await client.submit_invoice(invoice)
-except ValidationError as e:
-    print(f"Validation failed: {e.errors()}")
-except AuthenticationError as e:
-    print(f"Authentication failed: {e}")
-except FIRSAPIError as e:
-    print(f"API error: {e.status_code} - {e.message}")
-```
+API calls return structured results; validation returns a `FIRSValidationResponse` with `valid`, `errors`, `warnings`.
 
 ## Testing
 
-Run tests with pytest:
+Run with pytest:
 
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=firs_einvoice
-
-# Run specific test file
-pytest tests/test_models.py
+pytest -q
 ```
+
+Notes:
+- Some QR tests require `FIRS_PUBLIC_KEY` and `FIRS_CERTIFICATE` env vars and `pycryptodome`.
+- Example tests run the scripts under `examples/` and expect network/API to be unavailable in demo mode, so they handle failures gracefully.
 
 ## Examples
 
-See the `examples/` directory for complete working examples:
+See `examples/` for runnable demos:
 
-- `simple_invoice.py` - Basic invoice creation
-- `qr_code_demo.py` - QR code generation
-- `firs_signing_demo.py` - Digital signing
-- `api_integration.py` - Full API workflow
+- `simple_invoice.py` – basic invoice, validation, IRN, QR
+- `comprehensive_example.py` – multiple items, HSN/tax showcase, signing demo
 
 ## Development
 
-### Setup Development Environment
-
 ```bash
-# Clone repository
-git clone https://github.com/firs-einvoice/firs-einvoice-py.git
-cd firs-einvoice-py
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Install package in editable mode
+git clone https://github.com/Zulaiy/zutax-sdk-py.git
+cd zutax-sdk-py
+python -m venv .venv && source .venv/bin/activate
 pip install -e .
+pip install -r requirements-dev.txt  # if present, or use Poetry group dev
 ```
 
-### Code Quality
+Quality tools (if you use them):
 
 ```bash
-# Format code with black
 black firs_einvoice
-
-# Sort imports
 isort firs_einvoice
-
-# Type checking
 mypy firs_einvoice
-
-# Linting
 flake8 firs_einvoice
 ```
 
 ## Documentation
 
-Full documentation is available at [https://firs-einvoice-py.readthedocs.io](https://firs-einvoice-py.readthedocs.io)
+Inline docstrings and examples are the primary reference for now. Additional docs may be added.
 
 ## License
 
@@ -384,39 +274,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please open issues and PRs on the GitHub repo under the Zulaiy organization.
 
 ## Support
 
 For issues and questions:
-- GitHub Issues: [https://github.com/firs-einvoice/firs-einvoice-py/issues](https://github.com/firs-einvoice/firs-einvoice-py/issues)
-- Documentation: [https://firs-einvoice-py.readthedocs.io](https://firs-einvoice-py.readthedocs.io)
+- GitHub Issues: https://github.com/Zulaiy/zutax-sdk-py/issues
 
 ## Changelog
 
-### Version 1.0.0 (2024-01-15)
-- Initial release with full Pydantic v2 support
-- Complete FIRS API integration
-- Digital signing and QR code generation
+See Git history and releases in the repository.
 
-## Publishing
-
-By default we publish to GitHub’s Python package registry (GitHub Packages) on version tags `v*`.
-
-Workflow: `.github/workflows/publish-github-packages.yml`
-
-Trigger a publish by tagging and pushing:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-Install from GitHub Packages (replace OWNER with your org/user):
-
-```bash
-pip install --index-url https://pypi.pkg.github.com/OWNER/simple/ --extra-index-url https://pypi.org/simple/ zutax-sdk-py
-```
-
-Alternatively, PyPI publishing is available via a separate workflow and tag namespace (`pypi-v*`): `.github/workflows/publish-pypi.yml`.
-- Comprehensive validation and error handling
+— Built and maintained by Zulaiy.
