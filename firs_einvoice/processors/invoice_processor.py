@@ -64,7 +64,7 @@ class InvoiceProcessor:
             irn = IRNGenerator.generate_irn(invoice)
             invoice.irn = irn
             
-            qr_code = FIRSQRCodeGenerator.generate_qr_code(invoice, irn)
+            qr_code = FIRSQRCodeGenerator.generate_qr_code(irn)
             invoice.qr_code = qr_code
             
             return ProcessingResult(

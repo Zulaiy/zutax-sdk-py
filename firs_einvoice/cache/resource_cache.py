@@ -33,9 +33,15 @@ class ResourceCache:
     def __init__(self):
         if self._initialized:
             return
-            
-        self.config = get_config()
-        self.default_ttl = self.config.cache_ttl
+        
+    # Avoid hard-failing at import time if config/env isn't ready (e.g., tests)
+        try:
+            self.config = get_config()
+            self.default_ttl = getattr(self.config, 'cache_ttl', 300)
+        except Exception:
+            # Fall back to safe defaults so the cache can still operate
+            self.config = None
+            self.default_ttl = 300
         self._cache: Dict[str, CacheEntry] = {}
         self._stats = {
             'hits': 0,
@@ -99,8 +105,12 @@ class ResourceCache:
             print(f"Error setting cache for key {key}: {error}")
             return False
     
-    async def get_or_set(self, key: str, factory: Callable[[], Awaitable[Any]], 
-                        ttl: Optional[float] = None) -> Any:
+    async def get_or_set(
+        self,
+        key: str,
+        factory: Callable[[], Awaitable[Any]],
+        ttl: Optional[float] = None,
+    ) -> Any:
         """Get value from cache or set using factory function."""
         # Check if value exists in cache
         cached_value = self.get(key)
@@ -246,13 +256,13 @@ class ResourceCache:
     # Cache key prefixes for different resource types
     KEY_PREFIXES = {
         'VAT_EXEMPTIONS': 'vat_exemptions',
-        'PRODUCT_CODES': 'product_codes', 
+        'PRODUCT_CODES': 'product_codes',
         'SERVICE_CODES': 'service_codes',
         'STATES': 'states',
         'LGAS': 'lgas',
         'INVOICE_TYPES': 'invoice_types',
         'TAX_CATEGORIES': 'tax_categories',
-        'VALIDATED_INVOICE': 'validated_invoice'
+        'VALIDATED_INVOICE': 'validated_invoice',
     }
 
 

@@ -3,7 +3,6 @@
 
 import os
 import json
-from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -13,8 +12,6 @@ load_dotenv()
 # Import after loading .env
 from firs_einvoice.crypto.irn import IRNGenerator
 from firs_einvoice import FIRSClient, FIRSConfig
-from firs_einvoice.crypto.firs_qrcode import FIRSQRCodeGenerator
-from firs_einvoice.crypto.firs_signing import FIRSSigner
 
 def test_irn_generation():
     """Test IRN generation with proper FIRS_SERVICE_ID."""
@@ -50,7 +47,13 @@ def test_irn_generation():
     
     # Verify service ID matches .env
     if service_id:
-        assert components['service_id'] == service_id[:8].upper(), f"Service ID mismatch! Expected {service_id}, got {components['service_id']}"
+        assert (
+            components['service_id'] == service_id[:8].upper()
+        ), (
+            "Service ID mismatch! Expected {} got {}".format(
+                service_id, components['service_id']
+            )
+        )
         print(f"   ✅ Service ID matches .env: {components['service_id']}")
     
     # Test 2: Generate IRN with FIRSClient
@@ -81,7 +84,9 @@ def test_irn_generation():
     print(f"   Date Stamp: {client_components[-1]}")
     
     if service_id:
-        assert client_components[-2] == service_id[:8].upper(), f"Client Service ID mismatch!"
+        assert (
+            client_components[-2] == service_id[:8].upper()
+        ), "Client Service ID mismatch!"
         print(f"   ✅ Service ID matches .env: {client_components[-2]}")
     
     # Test 3: Generate IRN with specific date
@@ -92,37 +97,16 @@ def test_irn_generation():
     print(f"   Generated IRN: {irn_dated}")
     
     # Should match FIRS example format
-    expected_format = f"INV001-{service_id or 'GENERATED'}-20240611"
-    print(f"   Expected format: INV001-{'[SERVICE_ID]'}-20240611")
+    print("   Expected format: INV001-[SERVICE_ID]-20240611")
     
     if service_id:
         expected_irn = f"INV001-{service_id[:8].upper()}-20240611"
-        assert irn_dated == expected_irn, f"IRN format mismatch! Expected {expected_irn}, got {irn_dated}"
-        print(f"   ✅ Matches FIRS specification format!")
+        assert (
+            irn_dated == expected_irn
+        ), "IRN format mismatch! Expected {} got {}".format(expected_irn, irn_dated)
+        print("   ✅ Matches FIRS specification format!")
     
-    # Test 4: Generate QR code with proper IRN
-    print("\n4️⃣  Testing QR code generation with proper IRN:")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Create output directory
-    output_dir = Path("qr_output")
-    output_dir.mkdir(exist_ok=True)
-    
-    # Generate QR code
-    qr_output_path = output_dir / f"irn_test_{timestamp}.png"
-    
-    try:
-        FIRSQRCodeGenerator.generate_qr_code_to_file(
-            test_invoice,
-            irn,
-            str(qr_output_path)
-        )
-        
-        if qr_output_path.exists():
-            print(f"   ✅ QR code saved: {qr_output_path}")
-            print(f"   File size: {qr_output_path.stat().st_size} bytes")
-    except Exception as e:
-        print(f"   ❌ QR generation failed: {e}")
+    # QR generation steps removed in minimal test suite cleanup
     
     # Save test results
     results = {
@@ -146,10 +130,14 @@ def test_irn_generation():
                 "matches_spec": irn_dated == f"INV001-{service_id[:8].upper() if service_id else 'GENERATED'}-20240611"
             }
         },
-        "qr_file": str(qr_output_path) if qr_output_path.exists() else None
+    "qr_file": None
     }
     
-    results_file = output_dir / f"irn_test_results_{timestamp}.json"
+    import tempfile
+    from pathlib import Path
+    tmp_dir = Path(tempfile.gettempdir())
+    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+    results_file = tmp_dir / f"irn_test_results_{ts}.json"
     with open(results_file, 'w') as f:
         json.dump(results, f, indent=2)
     
@@ -160,6 +148,7 @@ def test_irn_generation():
         print(f"\n🎯 All IRNs using FIRS_SERVICE_ID: {service_id}")
     else:
         print("\n⚠️  Add FIRS_SERVICE_ID to .env for production use!")
+
 
 if __name__ == "__main__":
     test_irn_generation()

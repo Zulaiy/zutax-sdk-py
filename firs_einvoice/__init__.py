@@ -52,8 +52,7 @@ from .api.resources import (
     LGA
 )
 
-# Cache
-from .cache.resource_cache import ResourceCache, CacheEntry, resource_cache
+# Cache (import lazily in modules that need it to avoid import-time side effects)
 
 # Processors
 from .processors.invoice_processor import InvoiceProcessor, ProcessingResult
@@ -285,32 +284,23 @@ class FIRSClient:
     async def generate_qr_code(
         self,
         invoice: Invoice,
-        options: Optional[Dict[str, Any]] = None
+        options: Optional[Dict[str, Any]] = None,
     ) -> str:
+        """Generate a QR payload placeholder for backward compatibility.
+
+        Note: Real QR code generation has moved to FIRSQRCodeGenerator and now
+        only requires the IRN. This placeholder returns a simple JSON payload
+        with IRN and basic invoice fields to avoid breaking external imports.
         """
-        Generate QR code for invoice.
-        
-        Args:
-            invoice: Invoice to generate QR code for
-            options: Optional QR code options
-            
-        Returns:
-            QR code data or base64 string
-        """
-        # This would normally use the QR code generator
-        # For now, return a placeholder
         irn = invoice.irn or self.generate_irn(invoice)
-        
-        qr_data = {
+        return json.dumps({
             "irn": irn,
             "invoice_number": invoice.invoice_number,
             "total": str(invoice.total_amount),
             "date": invoice.invoice_date.isoformat(),
-            "supplier": invoice.supplier.name,
-            "customer": invoice.customer.name,
-        }
-        
-        return json.dumps(qr_data)
+            "supplier": getattr(invoice.supplier, 'name', None),
+            "customer": getattr(invoice.customer, 'name', None),
+        })
     
     def generate_qr_code_data(self, invoice: Invoice) -> str:
         """
@@ -366,11 +356,10 @@ class FIRSClient:
         
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # This would normally generate and save the QR code
-        # For now, create a placeholder file
+
+        # For now, create a placeholder JSON file for compatibility
         output_path.write_text(await self.generate_qr_code(invoice))
-        
+
         return str(output_path)
     
     async def get_invoice_status(self, irn: str) -> Dict[str, Any]:

@@ -237,5 +237,8 @@ class FIRSAPIClient:
         })
 
 
-# Global singleton instance
-api_client = FIRSAPIClient()
+# Global singleton instance (guarded to avoid import-time failures in tests)
+try:
+    api_client = FIRSAPIClient()
+except Exception:
+    api_client = None

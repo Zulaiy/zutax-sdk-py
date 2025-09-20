@@ -252,7 +252,7 @@ async def demonstrate_crypto_operations(invoice):
             # QR Code generation
             print("\nQR Code Generation:")
             print("-" * 20)
-            qr_base64 = FIRSQRCodeGenerator.generate_qr_code(invoice, irn)
+            qr_base64 = FIRSQRCodeGenerator.generate_qr_code(irn)
             print(f"✓ QR code generated (base64): {len(qr_base64)} chars")
             
             # Save QR code to file

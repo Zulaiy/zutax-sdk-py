@@ -3,7 +3,7 @@
 
 import base64
 from pathlib import Path
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 import qrcode
 from qrcode.image.pil import PilImage
 import io
@@ -30,10 +30,13 @@ class FIRSQRCodeGenerator:
     """FIRS-compliant QR code generator."""
     
     @staticmethod
-    def generate_qr_code(invoice, irn: str, options: Optional[FIRSQRCodeOptions] = None) -> str:
+    def generate_qr_code(
+        irn: str,
+        options: Optional[FIRSQRCodeOptions] = None,
+    ) -> str:
         """
-        Generate FIRS-compliant QR code for invoice.
-        Returns base64-encoded PNG image.
+        Generate FIRS-compliant QR code for a given IRN.
+        Returns base64-encoded PNG image data.
         """
         if options is None:
             options = FIRSQRCodeOptions()
@@ -41,7 +44,9 @@ class FIRSQRCodeGenerator:
         # Get encrypted data for QR code
         signer = FIRSSigner()
         if not signer.is_configured():
-            raise Exception("FIRS keys not configured. Cannot generate QR code.")
+            raise Exception(
+                "FIRS keys not configured. Cannot generate QR code."
+            )
         
         # Sign the IRN to get encrypted data
         signing_result = signer.sign_irn(irn)
@@ -59,8 +64,12 @@ class FIRSQRCodeGenerator:
         return img_base64
     
     @staticmethod
-    def generate_qr_code_to_file(invoice, irn: str, file_path: str, 
-                                 options: Optional[FIRSQRCodeOptions] = None) -> None:
+    def generate_qr_code_to_file(
+        invoice,
+        irn: str,
+        file_path: str,
+        options: Optional[FIRSQRCodeOptions] = None,
+    ) -> None:
         """
         Generate FIRS-compliant QR code and save to file.
         """
@@ -70,7 +79,9 @@ class FIRSQRCodeGenerator:
         # Get encrypted data for QR code
         signer = FIRSSigner()
         if not signer.is_configured():
-            raise Exception("FIRS keys not configured. Cannot generate QR code.")
+            raise Exception(
+                "FIRS keys not configured. Cannot generate QR code."
+            )
         
         # Sign the IRN to get encrypted data
         signing_result = signer.sign_irn(irn)
@@ -96,12 +107,15 @@ class FIRSQRCodeGenerator:
             'H': qrcode.constants.ERROR_CORRECT_H
         }
         
-        error_correction = error_correction_map.get(options.error_correction, 
-                                                  qrcode.constants.ERROR_CORRECT_M)
+        error_correction = error_correction_map.get(
+            options.error_correction,
+            qrcode.constants.ERROR_CORRECT_M,
+        )
         
         # Create QR code with settings matching working implementation
         qr = qrcode.QRCode(
-            version=options.version,  # Use None for auto-detect as in working code
+            # Use None for auto-detect as in working code
+            version=options.version,
             error_correction=error_correction,
             box_size=options.box_size,
             border=options.border,
@@ -119,39 +133,13 @@ class FIRSQRCodeGenerator:
         return img
     
     @staticmethod
-    def generate_simple_qr(irn: str, certificate: str, public_key: str, 
-                          output_path: Optional[str] = None) -> Union[str, None]:
-        """
-        Generate simple QR code with direct encryption.
-        Returns base64 image data if no output_path, otherwise saves to file.
-        """
-        try:
-            # Encrypt data
-            encrypted_data = FIRSSigner.encrypt_for_qr(irn, certificate, public_key)
-            
-            # Create QR code
-            options = FIRSQRCodeOptions()
-            qr_code = FIRSQRCodeGenerator._create_qr_code(encrypted_data, options)
-            
-            if output_path:
-                # Save to file
-                Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-                qr_code.save(output_path, format='PNG')
-                return None
-            else:
-                # Return base64
-                img_buffer = io.BytesIO()
-                qr_code.save(img_buffer, format='PNG')
-                img_buffer.seek(0)
-                
-                img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-                return img_base64
-                
-        except Exception as error:
-            raise Exception(f"Failed to generate QR code: {error}")
+    # generate_simple_qr removed to maintain a single QR generation path
     
     @staticmethod
-    def generate_multiple_qr_codes(invoices: list, output_dir: str = None) -> list:
+    def generate_multiple_qr_codes(
+        invoices: list,
+        output_dir: str = None,
+    ) -> list:
         """Generate QR codes for multiple invoices."""
         results = []
         
@@ -161,18 +149,23 @@ class FIRSQRCodeGenerator:
         for i, invoice in enumerate(invoices):
             try:
                 # Generate IRN if not present
-                irn = getattr(invoice, 'irn', None) or IRNGenerator.generate_irn(invoice)
+                irn = (
+                    getattr(invoice, 'irn', None)
+                    or IRNGenerator.generate_irn(invoice)
+                )
                 
                 if output_dir:
                     output_path = Path(output_dir) / f"qr_{irn}_{i+1}.png"
-                    FIRSQRCodeGenerator.generate_qr_code_to_file(invoice, irn, str(output_path))
+                    FIRSQRCodeGenerator.generate_qr_code_to_file(
+                        invoice, irn, str(output_path)
+                    )
                     result = {
                         'irn': irn,
                         'file_path': str(output_path),
                         'success': True
                     }
                 else:
-                    qr_base64 = FIRSQRCodeGenerator.generate_qr_code(invoice, irn)
+                    qr_base64 = FIRSQRCodeGenerator.generate_qr_code(irn)
                     result = {
                         'irn': irn,
                         'qr_code': qr_base64,
@@ -206,5 +199,9 @@ class FIRSQRCodeGenerator:
         return {
             'data_length': len(qr_data),
             'is_base64': FIRSQRCodeGenerator.validate_qr_data(qr_data),
-            'data_preview': qr_data[:50] + '...' if len(qr_data) > 50 else qr_data
+            'data_preview': (
+                qr_data[:50] + '...'
+                if len(qr_data) > 50
+                else qr_data
+            )
         }
