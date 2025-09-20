@@ -8,6 +8,7 @@ and asserts that the output is valid base64 and decodes to PNG bytes.
 import base64
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 import pytest
 from zutax.crypto.firs_qrcode import FIRSQRCodeGenerator
@@ -19,6 +20,9 @@ import uuid
 
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+# Load environment variables from .env, if present
+load_dotenv()
 
 
 def _ensure_test_keys():
@@ -52,6 +56,6 @@ def test_generate_qr_base64_is_png():
     assert raw.startswith(PNG_MAGIC)
 
     # Optionally write to tmp for local debugging
-    out = Path("./firs-einvoice-py/tests/qr_output")
-    out.mkdir(exist_ok=True)
+    out = Path(__file__).parent / "qr_output"
+    out.mkdir(parents=True, exist_ok=True)
     (out / "unit_simple_qr.png").write_bytes(raw)
