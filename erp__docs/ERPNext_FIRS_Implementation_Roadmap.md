@@ -24,7 +24,7 @@ docker-compose -f pwd.yml up -d
 docker exec -it frappe_docker_frappe_1 bench new-app erpnext_firs_einvoice
 
 # Install Zutax SDK in the container
-docker exec -it frappe_docker_frappe_1 pip install firs-einvoice
+docker exec -it frappe_docker_frappe_1 pip install git+https://github.com/Zulaiy/zutax-sdk-py.git
 ```
 
 ### 1.3 App Installation
@@ -234,25 +234,25 @@ bench install-app erpnext_firs_einvoice --site firs-demo.local
 ```python
 # Example test structure
 def test_tin_validation():
-    """Test TIN validation functionality"""
-    assert validate_tin("12345678") == True
-    assert validate_tin("invalid") == False
+  """Test TIN validation functionality"""
+  assert validate_tin("12345678") == True
+  assert validate_tin("invalid") == False
 
 def test_irn_generation():
-    """Test IRN generation"""
-    invoice = create_test_invoice()
-    irn = generate_irn(invoice)
-    assert len(irn.split('-')) == 3
+  """Test IRN generation"""
+  invoice = create_test_invoice()
+  irn = generate_irn(invoice)
+  assert len(irn.split('-')) == 3
 ```
 
 #### Integration Testing
 ```python
 # Example integration test
 def test_sales_invoice_to_firs_conversion():
-    """Test conversion of Sales Invoice to FIRS format"""
-    sales_invoice = create_test_sales_invoice()
-    firs_format = convert_to_firs_format(sales_invoice)
-    assert firs_format.invoice_number == sales_invoice.name
+  """Test conversion of Sales Invoice to FIRS format"""
+  sales_invoice = create_test_sales_invoice()
+  firs_format = convert_to_firs_format(sales_invoice)
+  assert firs_format.invoice_number == sales_invoice.name
 ```
 
 ### 3.3 Performance Optimization
@@ -308,7 +308,7 @@ OS: Ubuntu 20.04 LTS or CentOS 8
 # install_firs_app.sh
 
 # Install Zutax SDK
-pip3 install firs-einvoice
+pip3 install git+https://github.com/Zulaiy/zutax-sdk-py.git
 
 # Install ERPNext app
 bench get-app erpnext_firs_einvoice https://github.com/yourorg/erpnext_firs_einvoice.git
