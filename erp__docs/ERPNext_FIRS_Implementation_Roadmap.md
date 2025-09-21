@@ -24,7 +24,10 @@ docker-compose -f pwd.yml up -d
 docker exec -it frappe_docker_frappe_1 bench new-app erpnext_firs_einvoice
 
 # Install Zutax SDK in the container
-docker exec -it frappe_docker_frappe_1 pip install git+https://github.com/Zulaiy/zutax-sdk-py.git
+# Using specific release tag for stability (recommended)
+docker exec -it frappe_docker_frappe_1 pip install git+https://github.com/Zulaiy/zutax-sdk-py.git@v1.0.0
+# Or latest version without tag (not recommended for production)
+# docker exec -it frappe_docker_frappe_1 pip install git+https://github.com/Zulaiy/zutax-sdk-py.git
 ```
 
 ### 1.3 App Installation
@@ -307,11 +310,11 @@ OS: Ubuntu 20.04 LTS or CentOS 8
 #!/bin/bash
 # install_firs_app.sh
 
-# Install Zutax SDK
-pip3 install git+https://github.com/Zulaiy/zutax-sdk-py.git
+# Install Zutax SDK with specific release tag (recommended for production)
+pip3 install git+https://github.com/Zulaiy/zutax-sdk-py.git@v1.0.0
 
-# Install ERPNext app
-bench get-app erpnext_firs_einvoice https://github.com/yourorg/erpnext_firs_einvoice.git
+# Install ERPNext app with specific release tag
+bench get-app erpnext_firs_einvoice https://github.com/yourorg/erpnext_firs_einvoice.git --branch v0.1.0
 
 # Install in site
 bench install-app erpnext_firs_einvoice --site your-site.com
