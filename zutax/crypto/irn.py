@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, Dict
+from typing import TYPE_CHECKING, Optional, Dict, Any
 
 if TYPE_CHECKING:  # pragma: no cover - for type hints only
     from ..models.invoice import Invoice
@@ -22,8 +22,11 @@ class IRNGenerator:
     Example: INV001-94ND90NR-20240611
     """
 
-    @staticmethod
-    def generate_irn(invoice: "Invoice") -> str:
+    def __init__(self, config: Optional[Any] = None):
+        """Initialize with optional config."""
+        self.config = config
+
+    def generate_irn(self, invoice: "Invoice") -> str:
         """
         Generate IRN according to FIRS specification.
         Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
@@ -33,17 +36,19 @@ class IRNGenerator:
         # Extract invoice number
         invoice_number = getattr(invoice, "invoice_number", None) or "INV001"
 
-        # Prefer FIRS-assigned service ID from environment; fall back
-        # to generated
-        service_id = (
-            os.environ.get("FIRS_SERVICE_ID")
-            or IRNGenerator._generate_service_id()
-        )
+        # Prefer service ID from config, then env, then generate
+        service_id = None
+        if self.config:
+            service_id = getattr(self.config, "service_id", None)
+        if not service_id:
+            service_id = os.environ.get("FIRS_SERVICE_ID")
+        if not service_id:
+            service_id = self._generate_service_id()
         service_id = service_id[:8].upper()
 
         # Date stamp from invoice.issue_date if available; else now
         issue_date = getattr(invoice, "issue_date", None)
-        date_stamp = IRNGenerator._generate_date_stamp(issue_date)
+        date_stamp = self._generate_date_stamp(issue_date)
 
         return f"{invoice_number}-{service_id}-{date_stamp}"
 
@@ -124,6 +129,5 @@ class IRNGenerator:
         return irn
 
 
+
 __all__ = ["IRNGenerator"]
-
-

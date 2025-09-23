@@ -42,9 +42,10 @@ class FIRSSigningResult(BaseModel):
 class FIRSSigner:
     """FIRS digital signing implementation with lazy Crypto imports."""
 
-    def __init__(self) -> None:
+    def __init__(self, config: Optional[Any] = None) -> None:
         self.firs_public_key_pem: Optional[str] = None
         self.firs_certificate: Optional[str] = None
+        self.config = config
         self._load_firs_keys()
 
     def _ensure_crypto(self):  # pragma: no cover - trivial import helper
@@ -59,11 +60,21 @@ class FIRSSigner:
         return RSA, PKCS1_v1_5
 
     def _load_firs_keys(self) -> None:
-        """Load FIRS public key and certificate from env or key file."""
+        """Load FIRS public key and certificate from config, env or key file."""
         try:
-            # First try environment variables
-            public_key_text = os.environ.get("FIRS_PUBLIC_KEY")
-            certificate_text = os.environ.get("FIRS_CERTIFICATE")
+            # First try config if provided
+            public_key_text = None
+            certificate_text = None
+            
+            if self.config:
+                public_key_text = getattr(self.config, "firs_public_key", None)
+                certificate_text = getattr(self.config, "firs_certificate", None)
+            
+            # Fallback to environment variables
+            if not public_key_text:
+                public_key_text = os.environ.get("FIRS_PUBLIC_KEY")
+            if not certificate_text:
+                certificate_text = os.environ.get("FIRS_CERTIFICATE")
 
             if public_key_text and certificate_text:
                 # FIRS_PUBLIC_KEY is Base64-encoded PEM

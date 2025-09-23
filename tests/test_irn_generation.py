@@ -36,7 +36,8 @@ def test_irn_generation():
     # Test 1: Generate IRN with IRNGenerator
     print("\n1️⃣  Testing IRNGenerator.generate_irn():")
     test_invoice = TestInvoice("INV-2024-001")
-    irn = IRNGenerator.generate_irn(test_invoice)
+    generator = IRNGenerator()
+    irn = generator.generate_irn(test_invoice)
     print(f"   Generated IRN: {irn}")
     
     # Parse and validate IRN
@@ -93,7 +94,7 @@ def test_irn_generation():
     print("\n3️⃣  Testing IRN with specific date:")
     specific_date = datetime(2024, 6, 11)  # June 11, 2024
     test_invoice_dated = TestInvoice("INV001", specific_date)
-    irn_dated = IRNGenerator.generate_irn(test_invoice_dated)
+    irn_dated = generator.generate_irn(test_invoice_dated)
     print(f"   Generated IRN: {irn_dated}")
     
     # Should match FIRS example format

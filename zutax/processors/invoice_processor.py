@@ -32,6 +32,7 @@ class InvoiceProcessor:
         cls,
         invoice_input: Dict[str, Any],
         business_context: Optional[BusinessContext] = None,
+        config: Optional[Any] = None,
     ) -> ProcessingResult:
         """
         Main processing function - converts input to complete invoice.
@@ -75,10 +76,12 @@ class InvoiceProcessor:
                 )
 
             # 4. GENERATE IRN & QR CODE
-            irn = IRNGenerator.generate_irn(invoice)
+            irn_generator = IRNGenerator(config=config)
+            irn = irn_generator.generate_irn(invoice)
             invoice.irn = irn
 
-            qr_code = FIRSQRCodeGenerator.generate_qr_code(irn)
+            qr_generator = FIRSQRCodeGenerator(config=config)
+            qr_code = qr_generator.generate_qr_code(irn)
             invoice.qr_code = qr_code
 
             return ProcessingResult(

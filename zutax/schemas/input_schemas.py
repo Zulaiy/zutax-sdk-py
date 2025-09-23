@@ -249,12 +249,6 @@ class InvoiceInput(BaseModel):
             self.invoice_number = f"{prefix}-{timestamp}"
         return self
 
-    class Config:
-        json_encoders = {
-            Decimal: str,
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat(),
-        }
 
 
 def validate_invoice_input(data: Dict[str, Any]) -> Dict[str, Any]:

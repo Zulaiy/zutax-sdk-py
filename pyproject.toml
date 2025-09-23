@@ -15,9 +15,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -28,8 +25,8 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
-pydantic = "^2.0.0"
+python = "^3.11"
+pydantic = "^2.11.0"
 pydantic-settings = "^2.0.0"
 requests = "^2.31.0"
 cryptography = "^41.0.0"
@@ -74,7 +71,7 @@ markers = [
 
 [tool.black]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311", "py312"]
+target-version = ["py311", "py312"]
 include = '\.pyi?$'
 
 [tool.isort]
@@ -82,7 +79,7 @@ profile = "black"
 line_length = 100
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

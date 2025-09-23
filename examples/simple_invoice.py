@@ -103,13 +103,18 @@ async def main():
     print("\n1. Initializing FIRS Client...")
     
     # Create ZutaxConfig object
+    # Now includes FIRS keys for signing and QR code generation
     config = ZutaxConfig(
         api_key=os.environ.get('FIRS_API_KEY', 'demo_api_key'),
         api_secret=os.environ.get('FIRS_API_SECRET', 'demo_api_secret'),
         business_id=os.environ.get('BUSINESS_ID', 'DEMO-BUS-001'),
         business_name=os.environ.get('BUSINESS_NAME', 'Demo Business Ltd'),
         tin=os.environ.get('TIN', '12345678901'),  # Fixed to match regex
-        service_id=os.environ.get('FIRS_SERVICE_ID', '94ND90NR')
+        service_id=os.environ.get('FIRS_SERVICE_ID', '94ND90NR'),
+        # Optional: FIRS keys for signing and QR generation
+        # These can now be in config instead of environment variables
+        firs_public_key=os.environ.get('FIRS_PUBLIC_KEY'),
+        firs_certificate=os.environ.get('FIRS_CERTIFICATE')
     )
     
     # Initialize client with config

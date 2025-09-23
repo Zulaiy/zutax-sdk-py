@@ -1,8 +1,6 @@
 """Base Pydantic model configuration for Zutax (formerly FIRS E-Invoice)."""
 
 from pydantic import BaseModel, ConfigDict
-from decimal import Decimal
-from datetime import datetime
 from typing import Any, Dict
 
 
@@ -18,10 +16,6 @@ class FIRSBaseModel(BaseModel):
         populate_by_name=True,
         from_attributes=True,
         arbitrary_types_allowed=True,
-        json_encoders={
-            Decimal: lambda v: str(v),
-            datetime: lambda v: v.isoformat(),
-        },
         json_schema_extra={"example": None},
     )
 

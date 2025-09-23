@@ -179,6 +179,12 @@ class ZutaxConfig(BaseSettings):
     key_password: Optional[SecretStr] = Field(
         None, description="Private key password"
     )
+    firs_public_key: Optional[str] = Field(
+        None, description="FIRS public key (Base64-encoded PEM)"
+    )
+    firs_certificate: Optional[str] = Field(
+        None, description="FIRS certificate (Base64-encoded)"
+    )
 
     # Proxy Configuration
     proxy_url: Optional[str] = Field(

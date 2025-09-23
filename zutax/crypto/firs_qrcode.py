@@ -29,8 +29,12 @@ class FIRSQRCodeOptions(BaseModel):
 class FIRSQRCodeGenerator:
     """FIRS-compliant QR code generator."""
 
-    @staticmethod
+    def __init__(self, config: Optional[Any] = None):
+        """Initialize with optional config."""
+        self.config = config
+
     def generate_qr_code(
+        self,
         irn: str,
         options: Optional[FIRSQRCodeOptions] = None,
     ) -> str:
@@ -41,7 +45,7 @@ class FIRSQRCodeGenerator:
         # Import signer lazily to avoid heavy dependency at import time
         from .firs_signing import FIRSSigner  # noqa: WPS433
 
-        signer = FIRSSigner()
+        signer = FIRSSigner(config=self.config)
         if not signer.is_configured():
             raise Exception(
                 "FIRS keys not configured. Cannot generate QR code."
@@ -52,7 +56,7 @@ class FIRSQRCodeGenerator:
         qr_data = signing_result.encrypted_data
 
         # Generate QR code
-        qr_code = FIRSQRCodeGenerator._create_qr_code(qr_data, options)
+        qr_code = self._create_qr_code(qr_data, options)
 
         # Convert to base64 PNG
         img_buffer = io.BytesIO()
@@ -62,8 +66,8 @@ class FIRSQRCodeGenerator:
         img_base64 = base64.b64encode(img_buffer.getvalue()).decode("utf-8")
         return img_base64
 
-    @staticmethod
     def generate_qr_code_to_file(
+        self,
         invoice: Any,
         irn: str,
         file_path: str,
@@ -76,7 +80,7 @@ class FIRSQRCodeGenerator:
         # Import signer lazily to avoid heavy dependency at import time
         from .firs_signing import FIRSSigner  # noqa: WPS433
 
-        signer = FIRSSigner()
+        signer = FIRSSigner(config=self.config)
         if not signer.is_configured():
             raise Exception(
                 "FIRS keys not configured. Cannot generate QR code."
@@ -87,7 +91,7 @@ class FIRSQRCodeGenerator:
         qr_data = signing_result.encrypted_data
 
         # Generate QR code
-        qr_code = FIRSQRCodeGenerator._create_qr_code(qr_data, options)
+        qr_code = self._create_qr_code(qr_data, options)
 
         # Ensure directory exists
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
@@ -95,8 +99,8 @@ class FIRSQRCodeGenerator:
         # Save to file
         qr_code.save(file_path, format="PNG")
 
-    @staticmethod
     def _create_qr_code(
+        self,
         data: str,
         options: FIRSQRCodeOptions,
     ) -> PilImage:
@@ -132,8 +136,8 @@ class FIRSQRCodeGenerator:
         )
         return img
 
-    @staticmethod
     def generate_multiple_qr_codes(
+        self,
         invoices: List[Any],
         output_dir: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
@@ -146,14 +150,15 @@ class FIRSQRCodeGenerator:
         for i, invoice in enumerate(invoices):
             try:
                 # Generate IRN if not present
-                irn = (
-                    getattr(invoice, "irn", None)
-                    or IRNGenerator.generate_irn(invoice)
-                )
+                if not getattr(invoice, "irn", None):
+                    irn_generator = IRNGenerator(config=self.config)
+                    irn = irn_generator.generate_irn(invoice)
+                else:
+                    irn = invoice.irn
 
                 if output_dir:
                     output_path = Path(output_dir) / f"qr_{irn}_{i + 1}.png"
-                    FIRSQRCodeGenerator.generate_qr_code_to_file(
+                    self.generate_qr_code_to_file(
                         invoice,
                         irn,
                         str(output_path),
@@ -164,7 +169,7 @@ class FIRSQRCodeGenerator:
                         "success": True,
                     }
                 else:
-                    qr_base64 = FIRSQRCodeGenerator.generate_qr_code(irn)
+                    qr_base64 = self.generate_qr_code(irn)
                     result = {
                         "irn": irn,
                         "qr_code": qr_base64,

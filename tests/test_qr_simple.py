@@ -47,7 +47,8 @@ def test_generate_qr_base64_is_png():
     irn = f"INV-TEST-{uuid.uuid4().hex[:8].upper()}-UNIT"
 
     # Generate base64 PNG via the maintained API
-    b64_png = FIRSQRCodeGenerator.generate_qr_code(irn)
+    qr_generator = FIRSQRCodeGenerator()
+    b64_png = qr_generator.generate_qr_code(irn)
     assert isinstance(b64_png, str)
     assert len(b64_png) > 0
 

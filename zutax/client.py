@@ -210,34 +210,13 @@ class ZutaxClient:
         )
 
     def generate_irn(self, invoice: Invoice) -> str:
-        """Generate IRN using legacy-compatible formatting.
-
-        Format: {SanitizedInvoice}-{ServiceID8}-{YYYYMMDD}-{OriginalInvoice}
+        """Generate IRN using standard FIRS formatting.
+        
+        Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
         """
-        # Service ID: env > config.service_id > business_id
-        service_id_source = (
-            os.environ.get("FIRS_SERVICE_ID")
-            or getattr(self.config, "service_id", None)
-            or self.config.business_id
-        )
-        sanitized_sid = "".join(
-            ch for ch in str(service_id_source).upper() if ch.isalnum()
-        )
-        if not sanitized_sid:
-            sanitized_sid = "ZUTAX000"
-        service_id = sanitized_sid[:8].ljust(8, "0")
-
-        date_stamp = (
-            invoice.issue_date.strftime("%Y%m%d")
-            if hasattr(invoice, "issue_date") and invoice.issue_date
-            else datetime.now().strftime("%Y%m%d")
-        )
-
-        sanitized_invoice = str(invoice.invoice_number).replace(
-            "-", ""
-        ).upper()
-        original_inv = str(invoice.invoice_number).upper()
-        return f"{sanitized_invoice}-{service_id}-{date_stamp}-{original_inv}"
+        from .crypto.irn import IRNGenerator
+        generator = IRNGenerator(config=self.config)
+        return generator.generate_irn(invoice)
 
     # File ops
     def save_invoice_to_file(

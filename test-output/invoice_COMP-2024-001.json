@@ -1,0 +1,191 @@
+{
+  "invoice_number": "COMP-2024-001",
+  "invoice_date": "2025-09-24 00:13:04.598435",
+  "invoice_type": "STANDARD",
+  "invoice_status": "DRAFT",
+  "reference_number": "PO-2024-456",
+  "supplier": {
+    "business_id": "SUP-DEMO-001",
+    "tin": "12345678901",
+    "name": "Tech Solutions Nigeria Ltd",
+    "trade_name": "TechSol",
+    "registration_number": "RC12345678",
+    "email": "billing@techsol.ng",
+    "phone": "+2348012345678",
+    "address": {
+      "street": "123 Victoria Island",
+      "street2": "Corporate Plaza, 5th Floor",
+      "city": "Lagos",
+      "state_code": "LA",
+      "lga_code": "LAGOS-ISLAND",
+      "postal_code": "101241",
+      "country_code": "NG"
+    },
+    "vat_registered": true,
+    "vat_number": "VAT12345678"
+  },
+  "customer": {
+    "business_id": "CUS-DEMO-001",
+    "tin": "87654321098",
+    "name": "Global Manufacturing Ltd",
+    "email": "procurement@globalmanuf.ng",
+    "phone": "+2348087654321",
+    "address": {
+      "street": "456 Central Business District",
+      "city": "Abuja",
+      "state_code": "FC",
+      "lga_code": "ABUJA-MUNICIPAL",
+      "postal_code": "900271",
+      "country_code": "NG"
+    },
+    "vat_registered": true,
+    "vat_number": "VAT87654321"
+  },
+  "line_items": [
+    {
+      "line_number": 1,
+      "description": "High-Performance Server - Dell PowerEdge R750",
+      "hsn_code": "8471",
+      "product_code": "SERVER-DELL-R750",
+      "quantity": "3",
+      "unit_of_measure": "PCE",
+      "unit_price": "850000.00",
+      "discount": {
+        "percent": "15",
+        "description": "15% discount"
+      },
+      "tax_category": "VAT",
+      "tax_rate": "7.5",
+      "tax_exempt": false,
+      "discount_percent": "15",
+      "base_amount": "2550000.00",
+      "discount_amount": "382500.00",
+      "charge_amount": "0",
+      "taxable_amount": "2167500.00",
+      "tax_amount": "162562.500",
+      "line_total": "2330062.500"
+    },
+    {
+      "line_number": 2,
+      "description": "Cloud Infrastructure Setup and Configuration Service",
+      "hsn_code": "9984",
+      "product_code": "SVC-CLOUD-SETUP",
+      "quantity": "40",
+      "unit_of_measure": "HR",
+      "unit_price": "6250.00",
+      "tax_category": "VAT",
+      "tax_rate": "7.5",
+      "tax_exempt": false,
+      "base_amount": "250000.00",
+      "discount_amount": "0",
+      "charge_amount": "0",
+      "taxable_amount": "250000.00",
+      "tax_amount": "18750.000",
+      "line_total": "268750.000"
+    },
+    {
+      "line_number": 3,
+      "description": "Portable ECG Machine - Medical Grade",
+      "hsn_code": "9018",
+      "product_code": "MED-ECG-001",
+      "quantity": "10",
+      "unit_of_measure": "PCE",
+      "unit_price": "45000.00",
+      "tax_category": "VAT",
+      "tax_rate": "0",
+      "tax_exempt": true,
+      "tax_exempt_reason": "Medical equipment - VAT exempt under FIRS guidelines",
+      "tax_exemption_reason": "Medical equipment - VAT exempt under FIRS guidelines",
+      "base_amount": "450000.00",
+      "discount_amount": "0",
+      "charge_amount": "0",
+      "taxable_amount": "450000.00",
+      "tax_amount": "0",
+      "line_total": "450000.00"
+    },
+    {
+      "line_number": 4,
+      "description": "Rice - Premium Long Grain (50kg bags)",
+      "hsn_code": "1006",
+      "product_code": "FOOD-RICE-001",
+      "quantity": "100",
+      "unit_of_measure": "PCK",
+      "unit_price": "28000.00",
+      "tax_category": "VAT",
+      "tax_rate": "0",
+      "tax_exempt": true,
+      "tax_exempt_reason": "Basic food item - VAT exempt",
+      "tax_exemption_reason": "Basic food item - VAT exempt",
+      "base_amount": "2800000.00",
+      "discount_amount": "0",
+      "charge_amount": "0",
+      "taxable_amount": "2800000.00",
+      "tax_amount": "0",
+      "line_total": "2800000.00"
+    },
+    {
+      "line_number": 5,
+      "description": "Industrial Generator - 500KVA",
+      "hsn_code": "8502",
+      "product_code": "GEN-IND-500KVA",
+      "quantity": "1",
+      "unit_of_measure": "PCE",
+      "unit_price": "12500000.00",
+      "discount": {
+        "amount": "500000.00",
+        "description": "Fixed discount"
+      },
+      "tax_category": "VAT",
+      "tax_rate": "7.5",
+      "tax_exempt": false,
+      "base_amount": "12500000.00",
+      "discount_amount": "500000.00",
+      "charge_amount": "0",
+      "taxable_amount": "12000000.00",
+      "tax_amount": "900000.000",
+      "line_total": "12900000.000"
+    }
+  ],
+  "currency": "NGN",
+  "tax_breakdown": {
+    "subtotal": "18550000.00",
+    "total_discount": "882500.00",
+    "total_charges": "0",
+    "taxable_amount": "17667500.00",
+    "tax_details": [
+      {
+        "category": "VAT",
+        "rate": "7.5",
+        "taxable_amount": "17667500.00",
+        "tax_amount": "1081312.500",
+        "exempt_amount": "3250000.00",
+        "effective_rate": "6.120348096787887363803594170"
+      }
+    ],
+    "total_tax": "1081312.500",
+    "total_exempt": "3250000.00",
+    "total_amount": "18748812.500",
+    "tax_summary": {
+      "VAT": "1081312.500"
+    }
+  },
+  "payment_details": {
+    "method": "BANK_TRANSFER",
+    "terms": "Net 45",
+    "due_date": "2025-11-08",
+    "bank_name": "Zenith Bank Plc",
+    "account_number": "1234567890",
+    "account_name": "Tech Solutions Nigeria Ltd",
+    "reference": "COMP-2024-001-PAY"
+  },
+  "notes": "Comprehensive demonstration invoice",
+  "terms_and_conditions": "Payment due within 45 days. Late payments subject to 2% monthly interest.",
+  "irn": "COMP-2024-001-94ND90NR-20250924",
+  "created_at": "2025-09-23 23:13:04.598838",
+  "subtotal": "18550000.00",
+  "total_discount": "882500.00",
+  "total_charges": "0",
+  "total_tax": "1081312.500",
+  "total_amount": "18748812.500",
+  "line_count": 5
+}
