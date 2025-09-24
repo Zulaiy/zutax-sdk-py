@@ -1,6 +1,6 @@
 """Invoice Pydantic model - main model for Zutax FIRS E-Invoice."""
 
-from pydantic import Field, field_validator, model_validator, computed_field
+from pydantic import Field, field_validator, model_validator
 from decimal import Decimal
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
@@ -177,42 +177,22 @@ class Invoice(StrictBaseModel):
         None, description="FIRS submission timestamp"
     )
 
-    # Computed fields using Pydantic's computed_field
-    @computed_field
-    @property
-    def subtotal(self) -> Decimal:
-        """Calculate subtotal from line items."""
-        return sum(item.base_amount for item in self.line_items)
-
-    @computed_field
-    @property
-    def total_discount(self) -> Decimal:
-        """Calculate total discount."""
-        return sum(item.discount_amount for item in self.line_items)
-
-    @computed_field
-    @property
-    def total_charges(self) -> Decimal:
-        """Calculate total additional charges."""
-        return sum(item.charge_amount for item in self.line_items)
-
-    @computed_field
-    @property
-    def total_tax(self) -> Decimal:
-        """Calculate total tax."""
-        return sum(item.tax_amount for item in self.line_items)
-
-    @computed_field
-    @property
-    def total_amount(self) -> Decimal:
-        """Calculate total invoice amount."""
-        return sum(item.line_total for item in self.line_items)
-
-    @computed_field
-    @property
-    def line_count(self) -> int:
-        """Get number of line items."""
-        return len(self.line_items)
+    # Financial totals (to be calculated externally)
+    subtotal: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Subtotal amount"
+    )
+    total_discount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Total discount amount"
+    )
+    total_charges: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Total additional charges"
+    )
+    total_tax: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Total tax amount"
+    )
+    total_amount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Total invoice amount"
+    )
 
     @field_validator("invoice_number")
     @classmethod
@@ -268,53 +248,6 @@ class Invoice(StrictBaseModel):
                 item.line_number = idx
         return self
 
-    @model_validator(mode="after")
-    def calculate_tax_breakdown(self) -> "Invoice":
-        """Calculate tax breakdown if not provided."""
-        if not self.tax_breakdown:
-            from .tax import TaxBreakdown, TaxDetail
-
-            # Group taxes by category
-            tax_by_category: Dict[str, TaxDetail] = {}
-
-            for item in self.line_items:
-                # Ensure tax_category is TaxCategory enum
-                if isinstance(item.tax_category, str):
-                    tax_cat_enum = TaxCategory(item.tax_category)
-                else:
-                    tax_cat_enum = item.tax_category
-
-                category = tax_cat_enum.value if tax_cat_enum else "STANDARD"
-                if category not in tax_by_category:
-                    tax_by_category[category] = TaxDetail(
-                        category=(
-                            tax_cat_enum if tax_cat_enum else TaxCategory.VAT
-                        ),
-                        rate=item.tax_rate,
-                        taxable_amount=Decimal("0"),
-                        tax_amount=Decimal("0"),
-                        exempt_amount=Decimal("0"),
-                    )
-
-                detail = tax_by_category[category]
-                detail.taxable_amount += item.taxable_amount
-                detail.tax_amount += item.tax_amount
-                if item.tax_exempt:
-                    detail.exempt_amount = (
-                        detail.exempt_amount or Decimal("0")
-                    ) + item.taxable_amount
-
-            self.tax_breakdown = TaxBreakdown(
-                subtotal=self.subtotal,
-                total_discount=self.total_discount,
-                total_charges=self.total_charges,
-                taxable_amount=(
-                    self.subtotal - self.total_discount + self.total_charges
-                ),
-                tax_details=list(tax_by_category.values()),
-            )
-
-        return self
 
     model_config = {
         "json_schema_extra": {

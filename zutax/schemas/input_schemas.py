@@ -234,20 +234,6 @@ class InvoiceInput(BaseModel):
             raise ValueError("Either customer or customer_id must be provided")
         return self
 
-    @model_validator(mode="after")
-    def generate_invoice_number(self):
-        """Generate invoice number if not provided."""
-        if not self.invoice_number:
-            from datetime import datetime
-
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            prefix = "INV"
-            if self.invoice_type == InvoiceType.CREDIT:
-                prefix = "CRN"
-            elif self.invoice_type == InvoiceType.DEBIT:
-                prefix = "DBN"
-            self.invoice_number = f"{prefix}-{timestamp}"
-        return self
 
 
 

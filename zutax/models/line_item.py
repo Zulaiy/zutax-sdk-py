@@ -1,6 +1,6 @@
 """Line item Pydantic models for invoice items (Zutax)."""
 
-from pydantic import Field, field_validator, computed_field
+from pydantic import Field, field_validator
 from decimal import Decimal
 from typing import Optional, List
 from .base import FIRSBaseModel, StrictBaseModel
@@ -182,58 +182,25 @@ class LineItem(StrictBaseModel):
         description="Line item notes or comments",
     )
 
-    # Calculated fields (using Pydantic computed fields)
-    @computed_field
-    @property
-    def base_amount(self) -> Decimal:
-        """Calculate base amount (quantity * unit_price)."""
-        return self.quantity * self.unit_price
-
-    @computed_field
-    @property
-    def discount_amount(self) -> Decimal:
-        """Calculate discount amount."""
-        # Check convenience field first
-        if self.discount_percent:
-            return (self.base_amount * self.discount_percent) / Decimal("100")
-
-        if not self.discount:
-            return Decimal("0")
-
-        if self.discount.amount:
-            return self.discount.amount
-        elif self.discount.percent:
-            return (self.base_amount * self.discount.percent) / Decimal("100")
-        else:
-            return Decimal("0")
-
-    @computed_field
-    @property
-    def charge_amount(self) -> Decimal:
-        """Calculate total charges."""
-        if not self.charges:
-            return Decimal("0")
-        return sum(charge.amount for charge in self.charges)
-
-    @computed_field
-    @property
-    def taxable_amount(self) -> Decimal:
-        """Calculate taxable amount after discounts and charges."""
-        return self.base_amount - self.discount_amount + self.charge_amount
-
-    @computed_field
-    @property
-    def tax_amount(self) -> Decimal:
-        """Calculate tax amount."""
-        if self.tax_exempt:
-            return Decimal("0")
-        return (self.taxable_amount * self.tax_rate) / Decimal("100")
-
-    @computed_field
-    @property
-    def line_total(self) -> Decimal:
-        """Calculate line total including tax."""
-        return self.taxable_amount + self.tax_amount
+    # Line amounts (to be calculated externally)
+    base_amount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Base amount (quantity * unit_price)"
+    )
+    discount_amount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Total discount amount"
+    )
+    charge_amount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Total charge amount"
+    )
+    taxable_amount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Taxable amount after discounts/charges"
+    )
+    tax_amount: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Tax amount"
+    )
+    line_total: Optional[Decimal] = Field(
+        None, ge=0, decimal_places=2, description="Line total including tax"
+    )
 
     @field_validator("hsn_code")
     @classmethod
