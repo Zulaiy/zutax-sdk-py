@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zutax"
-version = "1.1.0"
+version = "1.2.0"
 description = "Zutax (by Zulaiy) - Python SDK for Nigerian FIRS e-Invoicing with Pydantic validation"
 authors = ["Zulaiy <opensource@zulaiy.com>"]
 license = "MIT"
