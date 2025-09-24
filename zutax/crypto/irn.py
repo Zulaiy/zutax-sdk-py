@@ -26,7 +26,7 @@ class IRNGenerator:
         """Initialize with optional config."""
         self.config = config
 
-    def generate_irn(self, invoice: "Invoice") -> str:
+    def generate_irn(self, invoice: "Invoice" | str) -> str:
         """
         Generate IRN according to FIRS specification.
         Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
@@ -34,18 +34,23 @@ class IRNGenerator:
         """
 
         # Extract invoice number
-        invoice_number = getattr(invoice, "invoice_number", None) or "INV001"
-
-        # Prefer service ID from config, then env, then generate
+        if isinstance(invoice, str):
+            invoice_number = invoice
+        elif hasattr(invoice, "invoice_number"):
+            invoice_number = getattr(invoice, "invoice_number", None)
+        else:
+            raise TypeError("invoice must be an Invoice instance or a string", invoice)
+    
+        # Prefer service ID from config, then env
         service_id = None
         if self.config:
             service_id = getattr(self.config, "service_id", None)
         if not service_id:
             service_id = os.environ.get("FIRS_SERVICE_ID")
         if not service_id:
-            service_id = self._generate_service_id()
-        service_id = service_id[:8].upper()
-
+            raise ValueError(
+                "Service ID not found in config or FIRS_SERVICE_ID env var"
+            )
         # Date stamp from invoice.issue_date if available; else now
         issue_date = getattr(invoice, "issue_date", None)
         date_stamp = self._generate_date_stamp(issue_date)

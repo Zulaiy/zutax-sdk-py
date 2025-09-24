@@ -208,7 +208,7 @@ class ZutaxClient:
             error_details=details if isinstance(details, list) else [details],
         )
 
-    def generate_irn(self, invoice: Invoice) -> str:
+    def generate_irn(self, invoice: Invoice | str) -> str:
         """Generate IRN using standard FIRS formatting.
         Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
         """
@@ -290,11 +290,11 @@ class ZutaxClient:
         }
 
     # QR Code Generation
-    def generate_qr_code(self, invoice: Invoice, format: str = "base64", **options) -> str:
+    def generate_qr_code(self, irn: str, format: str = "base64", **options) -> str:
         """Generate QR code for an invoice.
         
         Args:
-            invoice: The invoice object (must have IRN)
+            irn: The invoice IRN
             format: Output format ('base64' or 'file')
             **options: Additional QR generation options
         
@@ -303,7 +303,7 @@ class ZutaxClient:
         """
         from .crypto.firs_qrcode import FIRSQRCodeGenerator, FIRSQRCodeOptions
 
-        if not getattr(invoice, "irn", None):
+        if not irn:
             raise ValueError("Invoice must have an IRN to generate QR code")
 
         # Create QR options
@@ -321,7 +321,7 @@ class ZutaxClient:
 
         generator = FIRSQRCodeGenerator(config=self.config)   
         try:
-            return generator.generate_qr_code(invoice.irn, qr_options)
+            return generator.generate_qr_code(irn, qr_options)
         except Exception as e:
             raise RuntimeError(f"Failed to generate QR code: {e}")
         
