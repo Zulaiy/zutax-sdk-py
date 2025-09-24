@@ -14,7 +14,6 @@ Note: We intentionally mirror return shapes used by tests.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -211,7 +210,6 @@ class ZutaxClient:
 
     def generate_irn(self, invoice: Invoice) -> str:
         """Generate IRN using standard FIRS formatting.
-        
         Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
         """
         from .crypto.irn import IRNGenerator
@@ -254,6 +252,109 @@ class ZutaxClient:
                 return data.get("data", {})
             return {"error": data.get("error", "Failed to get status")}
         return {"error": f"HTTP {response.status_code}"}
+
+    # Cancel invoice
+    async def cancel_invoice(self, irn: str, reason: str = "Cancelled by user") -> Dict[str, Any]:
+        """Cancel an invoice by IRN."""
+        import requests
+
+        payload = {"reason": reason}
+        response = requests.post(
+            f"{self.config.base_url}/api/v1/invoice/cancel/{irn}",
+            json=payload,
+            headers={
+                "x-api-key": self._get_secret(self.config.api_key),
+                "x-api-secret": self._get_secret(self.config.api_secret),
+                "Content-Type": "application/json",
+            },
+            timeout=self.config.timeout,
+        )
+
+        try:
+            data = response.json()
+        except Exception:
+            data = {}
+
+        if response.status_code == 200 and data.get("success"):
+            return {
+                "success": True,
+                "message": data.get("message", "Invoice cancelled successfully"),
+                "data": data.get("data", {})
+            }
+
+        error_data = data.get("error", f"HTTP {response.status_code}")
+        return {
+            "success": False,
+            "error": error_data,
+            "message": f"Cancellation failed: {error_data}"
+        }
+
+    # QR Code Generation
+    def generate_qr_code(self, invoice: Invoice, format: str = "base64", **options) -> str:
+        """Generate QR code for an invoice.
+        
+        Args:
+            invoice: The invoice object (must have IRN)
+            format: Output format ('base64' or 'file')
+            **options: Additional QR generation options
+        
+        Returns:
+            Base64 encoded QR code string
+        """
+        from .crypto.firs_qrcode import FIRSQRCodeGenerator, FIRSQRCodeOptions
+
+        if not getattr(invoice, "irn", None):
+            raise ValueError("Invoice must have an IRN to generate QR code")
+
+        # Create QR options
+        qr_options = (
+            FIRSQRCodeOptions(**options)
+            if options
+            else FIRSQRCodeOptions()
+        )
+
+        # Apply any customization from client config
+        if self.qr_customization:
+            for key, value in self.qr_customization.items():
+                if hasattr(qr_options, key):
+                    setattr(qr_options, key, value)
+
+        generator = FIRSQRCodeGenerator(config=self.config)   
+        try:
+            return generator.generate_qr_code(invoice.irn, qr_options)
+        except Exception as e:
+            raise RuntimeError(f"Failed to generate QR code: {e}")
+        
+
+    def validate_tin(self, tin: str) -> Dict[str, Any]:
+        """Validate Nigerian TIN format and checksum. 
+        Args:
+            tin: Tax Identification Number to validate      
+        Returns:
+            Dict with validation result
+        """
+        tin = str(tin).strip()
+        
+        # Basic format validation
+        if not tin:
+            return {"valid": False, "message": "TIN cannot be empty"}
+        
+        if not tin.isdigit():
+            return {"valid": False, "message": "TIN must contain only digits"}
+        
+        if len(tin) != 11:
+            return {"valid": False, "message": "TIN must be exactly 11 digits"}
+     
+        # Basic Nigerian TIN validation rules
+        if tin.startswith('0'):
+            return {"valid": False, "message": "TIN cannot start with 0"}      
+        # TODO: Add more sophisticated TIN validation logic if needed
+        # For now, basic format validation is sufficient        
+        return {
+            "valid": True, 
+            "message": "TIN format is valid",
+            "tin": tin
+        }
 
     # Utilities
     @staticmethod

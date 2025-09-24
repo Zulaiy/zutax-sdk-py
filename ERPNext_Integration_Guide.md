@@ -842,6 +842,45 @@ class ZutaxIntegrator:
             phone=customer.mobile_no,
             email=customer.email_id
         )
+        
+  def _build_address_from_company(self, company) -> Optional[Address]:
+          """Build Address object from ERPNext Company address"""
+          address_name = company.address  # Assuming 'address' field links to   Address doctype
+          if not address_name:
+              return None
+
+          try:
+              addr_doc = frappe.get_doc("Address", address_name)
+              return Address(
+                  street=addr_doc.address_line1 or "",
+                  city=addr_doc.city or "",
+                  state=addr_doc.state or "",
+                  pincode=addr_doc.pincode or "",
+                  country=addr_doc.country or ""
+              )
+          except frappe.DoesNotExistError:
+              frappe.log_error(f"Address {address_name} not found for Company   {company.name}")
+              return None
+
+    def _build_address_from_customer(self, customer) -> Optional[Address]:
+        """Build Address object from ERPNext Customer address"""
+        address_name = customer.address  # Assuming 'address' field links to Address doctype
+        if not address_name:
+            return None
+        
+        try:
+            addr_doc = frappe.get_doc("Address", address_name)
+            return Address(
+                street=addr_doc.address_line1 or "",
+                city=addr_doc.city or "",
+                state=addr_doc.state or "",
+                pincode=addr_doc.pincode or "",
+                country=addr_doc.country or ""
+            )
+        except frappe.DoesNotExistError:
+            frappe.log_error(f"Address {address_name} not found for Customer {customer.name}")
+            return None
+
 
     def _build_line_item(self, si_item) -> LineItem:
         """Build line item from Sales Invoice Item"""

@@ -118,6 +118,14 @@ class ZutaxConfig(BaseSettings):
         None, description="FIRS-assigned Service ID (8 characters)"
     )
 
+    firs_certificate: Optional[str] = Field(
+        None, description="FIRS certificate (Base64-encoded)"
+    )
+    
+    firs_public_key: Optional[str] = Field(
+        None, description="FIRS public key (Base64-encoded PEM)"
+    )
+
     # Operational Settings
     timeout: int = Field(
         default=DEFAULT_TIMEOUT, ge=5, le=120,
