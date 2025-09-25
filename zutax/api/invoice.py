@@ -84,7 +84,7 @@ class InvoiceAPI:
 
         # Submit to FIRS
         response = api_client.post(  # type: ignore[attr-defined]
-            "/api/v1/invoice/submit", json=invoice.model_dump()
+            "/api/v1/invoice/submit", json=invoice.model_dump(mode="json")
         )
 
         if not response.success:  # type: ignore[union-attr]

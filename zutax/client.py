@@ -14,11 +14,11 @@ Note: We intentionally mirror return shapes used by tests.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from .config.settings import (
     ZutaxConfig,
@@ -30,6 +30,7 @@ from .builders import InvoiceBuilder, LineItemBuilder
 from .models.invoice import Invoice
 from .models.enums import InvoiceStatus
 from .api.client import api_client
+from .api.invoice import InvoiceAPI, FIRSValidationResponse
 
 
 class InvoiceSubmissionResult(BaseModel):
@@ -44,14 +45,6 @@ class InvoiceSubmissionResult(BaseModel):
     error_message: Optional[str] = None
     error_details: List[str] = []
 
-
-class FIRSValidationResponse(BaseModel):
-    """Local validation response used in tests."""
-
-    valid: bool
-    # Accept any error shape (string or dict) to avoid validation failure
-    errors: List[Any] = Field(default_factory=list)
-    warnings: List[Any] = Field(default_factory=list)
 
 
 class ZutaxClient:
@@ -79,6 +72,9 @@ class ZutaxClient:
         self.qr_customization = qr_customization or {}
         self.app_settings = app_settings or {}
 
+        # Initialize API layer
+        self.invoice_api = InvoiceAPI()
+        
         # Update API client credentials if provided
         try:
             api_key = (
@@ -103,111 +99,83 @@ class ZutaxClient:
         context = business_context or self.business_context
         return InvoiceBuilder(context)
 
+    # Line item builder
     def create_line_item_builder(self) -> LineItemBuilder:
         return LineItemBuilder()
 
-    # Validation
+    # Validation (sync for backward compatibility)
     def validate_invoice(self, invoice: Invoice) -> FIRSValidationResponse:
-        """Validate invoice locally using Pydantic, excluding computed fields.
-
-        Mirrors legacy behavior to prevent extra field errors for computed
-        properties that are present on instances but not accepted as input.
+        """Validate invoice locally using Pydantic schemas.
+        
+        For remote validation, use validate_invoice_async.
         """
         try:
-            # Dump invoice but exclude computed fields that shouldn't be re-
-            # validated as inputs
-            exclude_fields = {
-                "subtotal",
-                "total_discount",
-                "total_charges",
-                "total_tax",
-                "total_amount",
-                "line_count",
-                "tax_breakdown",
-                "currency_code",
-            }
-            invoice_data = invoice.model_dump(exclude=exclude_fields)
-
-            # Also exclude computed fields from line items
-            if "line_items" in invoice_data and isinstance(
-                invoice_data["line_items"], list
-            ):
-                for item in invoice_data["line_items"]:
-                    for field in [
-                        "base_amount",
-                        "discount_amount",
-                        "charge_amount",
-                        "taxable_amount",
-                        "tax_amount",
-                        "line_total",
-                    ]:
-                        if isinstance(item, dict):
-                            item.pop(field, None)
-
-            # Validate the cleaned payload
+            invoice_data = invoice.model_dump()
             Invoice.model_validate(invoice_data)
             return FIRSValidationResponse(valid=True, errors=[], warnings=[])
-        except Exception as e:  # pragma: no cover
+        except Exception as e:
             return FIRSValidationResponse(
                 valid=False,
                 errors=[str(e)],
                 warnings=[],
             )
+    
+    async def validate_invoice_async(self, invoice: Invoice, remote: bool = True) -> FIRSValidationResponse:
+        """Validate invoice locally and optionally with FIRS API.
+        
+        Args:
+            invoice: Invoice to validate
+            remote: If True, also validate with FIRS API after local validation
+            
+        Returns:
+            FIRSValidationResponse with validation results
+        """
+        # First perform local validation
+        local_result = self.validate_invoice(invoice)
+        
+        # If local validation fails, return immediately
+        if not local_result.valid:
+            return local_result
+        
+        # If remote validation requested, call FIRS API
+        if remote:
+            return await self.invoice_api.validate_remote(invoice)
+        
+        # Return local validation success
+        return local_result
 
+    
+    
     # Submission
     async def submit_invoice(
         self, invoice: Invoice
     ) -> InvoiceSubmissionResult:
-        import requests
-
-        # Ensure IRN present
+        """Submit invoice to FIRS with automatic IRN generation.
+        
+        This method orchestrates:
+        1. IRN generation if not present
+        2. Delegation to InvoiceAPI for submission
+        """
+        # Ensure IRN present before submission
         if not getattr(invoice, "irn", None):
             invoice.irn = self.generate_irn(invoice)
 
-        payload = {
-            "invoice": invoice.model_dump(mode="json", exclude_none=True),
-            "irn": invoice.irn,
-        }
-
-        response = requests.post(
-            f"{self.config.base_url}/api/v1/invoice/submit",
-            json=payload,
-            headers={
-                "x-api-key": self._get_secret(self.config.api_key),
-                "x-api-secret": self._get_secret(self.config.api_secret),
-                "Content-Type": "application/json",
-            },
-            timeout=self.config.timeout,
-        )
-
-        try:
-            data = response.json()
-        except Exception:
-            data = {}
-
-        if response.status_code == 200 and data.get("success"):
-            return InvoiceSubmissionResult(
-                success=True,
-                irn=invoice.irn,
-                invoice_number=invoice.invoice_number,
-                submission_date=datetime.utcnow(),
-                status=InvoiceStatus.SUBMITTED,
-                reference_number=f"REF-{invoice.invoice_number}",
-            )
-
-        error_data = data.get("error", f"HTTP {response.status_code}")
-        details = data.get("details", [])
+        # Delegate actual submission to API layer
+        api_result = await self.invoice_api.submit_invoice(invoice)
+        
+        # Convert API result to client result format for backward compatibility
         return InvoiceSubmissionResult(
-            success=False,
-            irn=invoice.irn,
+            success=api_result.success,
+            irn=api_result.irn or invoice.irn,
             invoice_number=invoice.invoice_number,
-            submission_date=datetime.utcnow(),
-            status=InvoiceStatus.REJECTED,
-            reference_number=None,
-            error_message=error_data,
-            error_details=details if isinstance(details, list) else [details],
+            submission_date=datetime.now(timezone.utc),
+            status=InvoiceStatus.SUBMITTED if api_result.success else InvoiceStatus.REJECTED,
+            reference_number=f"REF-{invoice.invoice_number}" if api_result.success else None,
+            error_message=api_result.errors[0] if api_result.errors else None,
+            error_details=api_result.errors,
         )
 
+    # IRN Generation
     def generate_irn(self, invoice: Invoice | str) -> str:
         """Generate IRN using standard FIRS formatting.
         Format: {InvoiceNumber}-{ServiceID}-{DateStamp}
@@ -236,66 +204,26 @@ class ZutaxClient:
 
     # Status
     async def get_invoice_status(self, irn: str) -> Dict[str, Any]:
-        import requests
-
-        response = requests.get(
-            f"{self.config.base_url}/api/v1/invoice/status/{irn}",
-            headers={
-                "x-api-key": self._get_secret(self.config.api_key),
-                "x-api-secret": self._get_secret(self.config.api_secret),
-            },
-            timeout=self.config.timeout,
-        )
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("success"):
-                return data.get("data", {})
-            return {"error": data.get("error", "Failed to get status")}
-        return {"error": f"HTTP {response.status_code}"}
+        """Get invoice status by IRN.
+        
+        Delegates to InvoiceAPI for actual FIRS communication.
+        """
+        return await self.invoice_api.get_invoice_status(irn)
 
     # Cancel invoice
     async def cancel_invoice(self, irn: str, reason: str = "Cancelled by user") -> Dict[str, Any]:
-        """Cancel an invoice by IRN."""
-        import requests
-
-        payload = {"reason": reason}
-        response = requests.post(
-            f"{self.config.base_url}/api/v1/invoice/cancel/{irn}",
-            json=payload,
-            headers={
-                "x-api-key": self._get_secret(self.config.api_key),
-                "x-api-secret": self._get_secret(self.config.api_secret),
-                "Content-Type": "application/json",
-            },
-            timeout=self.config.timeout,
-        )
-
-        try:
-            data = response.json()
-        except Exception:
-            data = {}
-
-        if response.status_code == 200 and data.get("success"):
-            return {
-                "success": True,
-                "message": data.get("message", "Invoice cancelled successfully"),
-                "data": data.get("data", {})
-            }
-
-        error_data = data.get("error", f"HTTP {response.status_code}")
-        return {
-            "success": False,
-            "error": error_data,
-            "message": f"Cancellation failed: {error_data}"
-        }
+        """Cancel an invoice by IRN.
+        
+        Delegates to InvoiceAPI for actual FIRS communication.
+        """
+        return await self.invoice_api.cancel_invoice(irn, reason)
 
     # QR Code Generation
-    def generate_qr_code(self, irn: str, format: str = "base64", **options) -> str:
+    def generate_qr_code(self, irn: str, **options) -> str:
         """Generate QR code for an invoice.
         
         Args:
             irn: The invoice IRN
-            format: Output format ('base64' or 'file')
             **options: Additional QR generation options
         
         Returns:
@@ -324,8 +252,8 @@ class ZutaxClient:
             return generator.generate_qr_code(irn, qr_options)
         except Exception as e:
             raise RuntimeError(f"Failed to generate QR code: {e}")
-        
 
+    # TIN Validation    
     def validate_tin(self, tin: str) -> Dict[str, Any]:
         """Validate Nigerian TIN format and checksum. 
         Args:
