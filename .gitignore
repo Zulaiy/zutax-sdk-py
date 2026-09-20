@@ -31,11 +31,13 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-parts/
+# Anchored to the repo root: unanchored `lib/` matches a directory named `lib`
+# at ANY depth, which silently swallows source dirs like src/lib.
+/lib/
+/lib64/
+/parts/
 sdist/
-var/
+/var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
